@@ -1,0 +1,85 @@
+# =========================
+# Linux & Editor Files
+# =========================
+*~
+.directory
+.Trash-*
+core
+*.core
+
+# Text Editors / IDEs
+*.swp
+*.swo
+*.swn
+.vscode/
+.idea/
+compile_commands.json
+
+# =========================
+# KiCad (Hardware)
+# =========================
+# Backups and autosaves
+*-backups/
+*.bak
+*-bak
+*.bck
+*.sch-bak
+*.kicad_sch-bak
+*.kicad_pcb-bak
+_autosave-*
+*-save.pro
+*-save.kicad_pcb
+*-save.kicad_sch
+
+# Lock files & UI settings
+*.lck
+*.kicad_prl
+fp-info-cache
+
+# Netlists and Manufacturing outputs
+*.net
+hardware/**/gerbers/
+*.gbr
+*.drl
+*.pos
+*.gbrjob
+*.rpt
+*.csv
+
+# =========================
+# ESP-IDF / C++ (Firmware)
+# =========================
+# ESP-IDF specific
+firmware/build/
+firmware/managed_components/
+firmware/dependencies.lock
+sdkconfig.old
+
+# CMake & Ninja artifacts
+CMakeCache.txt
+CMakeFiles/
+Makefile
+*.cmake
+*.ninja
+.ninja_deps
+.ninja_log
+
+# Compiled objects, binaries, and dependencies
+*.o
+*.obj
+*.elf
+*.bin
+*.map
+*.hex
+*.a
+*.so
+*.d
+
+# =========================
+# Python (ESP-IDF Tooling)
+# =========================
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+env/
