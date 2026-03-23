@@ -13,7 +13,9 @@ core
 *.swn
 .vscode/
 .idea/
+.zed/
 compile_commands.json
+.clangd
 
 # =========================
 # KiCad (Hardware)
@@ -53,6 +55,8 @@ hardware/**/gerbers/
 firmware/build/
 firmware/managed_components/
 firmware/dependencies.lock
+firmware/.cache/
+firmware/sdkconfig
 sdkconfig.old
 
 # CMake & Ninja artifacts
