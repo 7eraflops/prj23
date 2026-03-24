@@ -87,3 +87,9 @@ __pycache__/
 venv/
 .venv/
 env/
+
+# =========================
+# Web Frontend (Node.js)
+# =========================
+node_modules/
+dist/

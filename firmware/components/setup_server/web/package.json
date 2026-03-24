@@ -1,0 +1,14 @@
+{
+  "name": "captive-portal-web",
+  "version": "1.0.0",
+  "description": "Frontend UI for Energy Meter Captive Portal",
+  "main": "dist/index.html",
+  "scripts": {
+    "build": "bun run build.ts"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.2.2"
+  }
+}
