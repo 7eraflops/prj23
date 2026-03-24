@@ -4,9 +4,12 @@
 #include "board_manager.hpp"
 #include "mdns_manager.hpp"
 #include "mqtt_manager.hpp"
+#include "ha_discovery.hpp"
 #include <esp_log.h>
 #include <esp_mac.h>
 #include <esp_system.h>
+#include <esp_wifi.h>
+#include <esp_timer.h>
 
 static const char* TAG = "Main";
 
@@ -16,6 +19,14 @@ extern "C" void app_main() {
     static ConfigManager config_mgr;
     static WifiManager wifi;
     static MqttManager mqtt(config_mgr);
+    
+    uint8_t base_mac[6];
+    esp_read_mac(base_mac, ESP_MAC_WIFI_STA);
+    char device_id[32];
+    snprintf(device_id, sizeof(device_id), "energymeter_%02x%02x%02x", base_mac[3], base_mac[4], base_mac[5]);
+    static HaDiscovery ha_discovery(mqtt, std::string(device_id));
+
+    board_manager::init_temperature_sensor();
 
     // Initialize reset button (GPIO 0 - BOOT button on DevKit)
     // Holding for 5 seconds will clear credentials and reboot
@@ -51,6 +62,11 @@ extern "C" void app_main() {
         wifi.wait_for_connection();
         ESP_LOGI(TAG, "WiFi Connected!");
 
+        mqtt.on_connect([]() {
+            ESP_LOGI(TAG, "MQTT Connected! Publishing HA Auto-Discovery...");
+            ha_discovery.publish_discovery_messages(12);
+        });
+
         if (mqtt.start() != ESP_OK) {
             ESP_LOGE(TAG, "Failed to start MQTT Manager");
         }
@@ -77,7 +93,21 @@ extern "C" void app_main() {
     while (true) {
         ESP_LOGI(TAG, "Energy Meter heartbeat...");
         if (mqtt.is_connected()) {
-            mqtt.publish("energy_meter/heartbeat", "{\"status\":\"alive\"}", 0, false);
+            wifi_ap_record_t ap_info;
+            int rssi = 0;
+            if (esp_wifi_sta_get_ap_info(&ap_info) == ESP_OK) {
+                rssi = ap_info.rssi;
+            }
+            uint32_t free_heap = esp_get_free_heap_size();
+            uint32_t uptime = esp_timer_get_time() / 1000000;
+            float mcu_temp = board_manager::get_mcu_temperature();
+
+            char payload[128];
+            snprintf(payload, sizeof(payload), 
+                "{\"status\":\"alive\",\"wifi_rssi\":%d,\"free_heap\":%lu,\"uptime\":%lu,\"mcu_temp\":%.1f}", 
+                rssi, (unsigned long)free_heap, (unsigned long)uptime, mcu_temp);
+
+            mqtt.publish("energy_meter/heartbeat", payload, 0, false);
         }
         vTaskDelay(pdMS_TO_TICKS(10000));
     }
