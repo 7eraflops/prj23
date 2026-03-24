@@ -1,9 +1,17 @@
 #pragma once
+
 #include <string>
+#include <vector>
 #include <esp_err.h>
 #include <esp_event.h>
-#include <esp_http_server.h>
-#include <wifi_provisioning/manager.h>
+#include <esp_wifi.h>
+
+// Represents a discovered Wi-Fi network during a scan
+struct WifiNetwork {
+    std::string ssid;
+    int rssi;
+    bool requires_password;
+};
 
 class WifiManager {
 public:
@@ -11,41 +19,64 @@ public:
     ~WifiManager();
 
     /**
-     * @brief Initializes NVS flash and the core Wi-Fi stack. Must be called first.
+     * @brief Initializes the core Wi-Fi stack and network interfaces.
+     *        Must be called before any other Wi-Fi functions.
      */
     esp_err_t init();
 
     /**
-     * @brief Starts the SoftAP provisioning process if the device is not yet provisioned.
-     *        Generates and prints a QR code to the console for easy mobile connection.
-     * 
-     * @param ssid_prefix The prefix for the SoftAP SSID broadcast by the device.
-     * @param pop The Proof of Possession (password) required to connect via the app.
+     * @brief Starts Station (STA) mode and connects to the specified router.
+     *
+     * @param ssid The SSID of the target network.
+     * @param password The password for the network.
      */
-    esp_err_t start_provisioning(const std::string& ssid_prefix, const std::string& pop);
-    
+    esp_err_t connect(const std::string& ssid, const std::string& password);
+
     /**
-     * @brief Returns true if the device already has saved Wi-Fi credentials in NVS.
+     * @brief Starts Access Point (AP) mode to broadcast an open network.
+     *        Typically used for the Captive Portal setup.
+     *
+     * @param ap_ssid The SSID that this device will broadcast.
      */
-    bool is_provisioned();
+    esp_err_t start_ap(const std::string& ap_ssid);
+
+    /**
+     * @brief Scans the environment for available Wi-Fi networks.
+     *        This is a blocking call until the scan completes.
+     *
+     * @return std::vector<WifiNetwork> A list of discovered networks.
+     */
+    std::vector<WifiNetwork> scan_networks();
 
     /**
      * @brief Blocks the current FreeRTOS task until a successful Wi-Fi connection is established.
      */
     void wait_for_connection();
 
+    /**
+     * @brief Erases saved Wi-Fi credentials from the internal ESP-IDF storage.
+     * @return ESP_OK on success.
+     */
+    esp_err_t clear_settings();
+
+    /**
+     * @brief Returns true if the device is currently connected to Wi-Fi.
+     */
+    bool is_connected() const { return _is_connected; }
+
+    /**
+     * @brief Returns the current Station IP address as a string.
+     */
+    std::string get_sta_ip() const;
+
 private:
-    static void      event_handler(void* arg, esp_event_base_t event_base,
-                                   int32_t event_id, void* event_data);
-    void             on_wifi_event(int32_t event_id, void* event_data);
-    void             on_ip_event(int32_t event_id, void* event_data);
-    void             on_prov_event(int32_t event_id, void* event_data);
+    // Core ESP-IDF event loop dispatcher
+    static void event_handler(void* arg, esp_event_base_t event_base,
+                              int32_t event_id, void* event_data);
 
-    static esp_err_t root_get_handler(httpd_req_t* req);
-    void             print_qr_code(const std::string& ssid, const std::string& pop);
+    // Specific event handlers
+    void on_wifi_event(int32_t event_id, void* event_data);
+    void on_ip_event(int32_t event_id, void* event_data);
 
-    bool           _is_connected    = false;
-    bool           _is_provisioned  = false;
-    bool           _is_provisioning = false;
-    httpd_handle_t _prov_httpd      = nullptr;
+    bool _is_connected = false;
 };
