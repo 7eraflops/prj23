@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Device Setup</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 2rem auto;
+        max-width: 450px;
+        padding: 0 1rem;
+        background-color: #f4f7f6;
+      }
+      .card {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+      h2 { margin-top: 0; color: #333; }
+      label {
+        display: block;
+        margin-top: 1.2rem;
+        font-weight: bold;
+        color: #555;
+      }
+      input, select {
+        width: 100%;
+        padding: 0.6rem;
+        margin-top: 0.4rem;
+        box-sizing: border-box;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .row { display: flex; gap: 10px; }
+      .row > div { flex: 1; }
+      button {
+        margin-top: 2rem;
+        width: 100%;
+        padding: 0.8rem;
+        background: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 1rem;
+        border-radius: 4px;
+        transition: background 0.2s;
+      }
+      button:hover { background: #0056b3; }
+      button:disabled { background: #ccc; cursor: not-allowed; }
+      .status {
+        margin-bottom: 1.5rem;
+        padding: 0.75rem;
+        border-radius: 4px;
+        display: none;
+      }
+      .error { background-color: #f8d7da; color: #721c24; display: block; }
+      .success { background-color: #d4edda; color: #155724; display: block; }
+      .info { background-color: #d1ecf1; color: #0c5460; display: block; }
+      .step { display: none; }
+      .step.active { display: block; }
+      .discovery-item {
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        background: #e9ecef;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
+      .discovery-item:hover { background: #dee2e6; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div id="statusMsg" class="status"></div>
+
+      <!-- STEP 1: WiFi Setup -->
+      <div id="step1" class="step active">
+        <h2>Step 1: Wi-Fi Setup</h2>
+        <form id="wifiForm">
+          <label for="ssid">Wi-Fi Network</label>
+          <select id="ssid" name="ssid" required>
+            <option value="">Scanning...</option>
+          </select>
+
+          <label for="password">Wi-Fi Password</label>
+          <input type="password" id="password" name="password" />
+
+          <button type="submit" id="wifiBtn">Connect to Wi-Fi</button>
+        </form>
+      </div>
+
+      <!-- STEP 2: MQTT Setup -->
+      <div id="step2" class="step">
+        <h2>Step 2: MQTT Setup</h2>
+        <div id="discoveryList"></div>
+        
+        <form id="mqttForm">
+          <label for="mqtt_type">MQTT Protocol</label>
+          <select id="mqtt_type" name="mqtt_type">
+            <option value="mqtt://">Standard (mqtt://)</option>
+            <option value="ws://">Websocket (ws://)</option>
+          </select>
+
+          <label for="mqtt_host">Broker Address (IP or Hostname)</label>
+          <input type="text" id="mqtt_host" name="mqtt_host" placeholder="192.168.1.100" required />
+
+          <label for="mqtt_port">Port</label>
+          <input type="number" id="mqtt_port" name="mqtt_port" value="1883" required />
+
+          <label for="mqtt_user">User (Optional)</label>
+          <input type="text" id="mqtt_user" name="mqtt_user" />
+
+          <label for="mqtt_pass">Password (Optional)</label>
+          <input type="password" id="mqtt_pass" name="mqtt_pass" />
+
+          <button type="submit" id="saveBtn">Save & Finish</button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+var K=document.getElementById("statusMsg"),Q=document.getElementById("ssid"),Y=document.getElementById("step1"),Z=document.getElementById("step2"),V=document.getElementById("wifiForm"),O=document.getElementById("mqttForm"),J=document.getElementById("discoveryList");function E(x,z){if(z==="none"){K.style.display="none";return}K.innerHTML=x,K.className=`status ${z}`,K.style.display="block"}async function _(){try{let z=await(await fetch("/api/scan")).json();Q.innerHTML='<option value="">Select a network...</option>',z.forEach((j)=>{let A=document.createElement("option");A.value=j.ssid,A.textContent=`${j.ssid} (${j.rssi}dBm)${j.secure?" \uD83D\uDD12":""}`,Q.appendChild(A)})}catch(x){console.error("Scan error:",x)}}V.addEventListener("submit",async(x)=>{x.preventDefault();let z=new FormData(V),j=Object.fromEntries(z.entries());E("Saving WiFi configuration and connecting...","info"),document.getElementById("wifiBtn").disabled=!0;try{if(!(await fetch("/api/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(j)})).ok)throw Error("Save failed");W()}catch(A){console.warn("Save request error, starting poll anyway (network switch probable)"),W()}});async function W(){let x=0,z=0,j=setInterval(async()=>{x++;try{let G=await(await fetch("/api/wifi-status",{signal:AbortSignal.timeout(1500)})).json();if(G.connected&&G.sta_ip!=="0.0.0.0"){if(z++,z>=2)clearInterval(j),$(G.sta_ip)}else if(z=0,x>40)clearInterval(j),E("Timed out waiting for WiFi. Please check SSID/Password and try again.","error"),document.getElementById("wifiBtn").disabled=!1}catch(A){if(x>15)clearInterval(j),B()}},2000)}function $(x){let j=`http://${x}`;if(!(window.location.hostname==="energy-meter.local"||window.location.hostname===x))E(`<strong>Connected to Wi-Fi!</strong><br>
+       The device is now reachable at its new IP: <strong>${x}</strong><br><br>
+       <a href="http://energy-meter.local" style="color:white;font-weight:bold;display:block;margin-bottom:10px;">Go to energy-meter.local</a>
+       <a href="${j}" style="color:white;text-decoration:underline;">Or use direct IP: ${x}</a>`,"success"),setTimeout(()=>{window.location.href="http://energy-meter.local"},4000);else N()}function B(){E(`<strong>Connection Lost (Mode Change)</strong><br>
+       The device has likely connected to Wi-Fi and moved to its new address.<br><br>
+       <a href="http://energy-meter.local" style="color:white;font-weight:bold;">Continue at energy-meter.local</a>`,"info"),setTimeout(()=>{window.location.href="http://energy-meter.local"},5000)}function N(){E("","none"),Y.classList.remove("active"),Z.classList.add("active"),P()}async function P(){J.innerHTML="<p>Searching for local MQTT brokers (mDNS)...</p>";try{let z=await(await fetch("/api/mqtt-brokers")).json();if(z.length===0){J.innerHTML="<p>No brokers discovered automatically.</p>";return}J.innerHTML="<strong>Discovered Brokers:</strong>",z.forEach((j)=>{let A=document.createElement("div");A.className="discovery-item",A.textContent=`${j.hostname} (${j.ip}:${j.port})`,A.onclick=()=>{document.getElementById("mqtt_host").value=j.ip,document.getElementById("mqtt_port").value=j.port.toString();let G=document.getElementById("mqtt_type"),H=j.protocol||"mqtt://";if(j.txt&&(j.txt.protocol==="ws"||j.txt.transport==="ws"))H="ws://";else if([8080,8083,9001].includes(j.port))H="ws://";G.value=H},J.appendChild(A)})}catch(x){J.innerHTML=""}}O.addEventListener("submit",async(x)=>{x.preventDefault();let z=new FormData(O),j=Object.fromEntries(z.entries()),G={mqtt_uri:`${j.mqtt_type}${j.mqtt_host}:${j.mqtt_port}`,mqtt_user:j.mqtt_user,mqtt_pass:j.mqtt_pass};E("Saving MQTT configuration...","info"),document.getElementById("saveBtn").disabled=!0;try{if(!(await fetch("/api/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(G)})).ok)throw Error("Save failed");E("All set! Rebooting device...","success"),await fetch("/api/reboot",{method:"POST"}),Array.from(O.elements).forEach((X)=>{X.disabled=!0})}catch(H){E("Failed to save. Try again.","error"),document.getElementById("saveBtn").disabled=!1}});_();
+
+</script>
+  </body>
+</html>
