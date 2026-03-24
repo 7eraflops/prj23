@@ -3,6 +3,7 @@
 #include "setup_server.hpp"
 #include "board_manager.hpp"
 #include "mdns_manager.hpp"
+#include "mqtt_manager.hpp"
 #include <esp_log.h>
 #include <esp_mac.h>
 #include <esp_system.h>
@@ -14,6 +15,7 @@ extern "C" void app_main() {
 
     static ConfigManager config_mgr;
     static WifiManager wifi;
+    static MqttManager mqtt(config_mgr);
 
     // Initialize reset button (GPIO 0 - BOOT button on DevKit)
     // Holding for 5 seconds will clear credentials and reboot
@@ -49,7 +51,9 @@ extern "C" void app_main() {
         wifi.wait_for_connection();
         ESP_LOGI(TAG, "WiFi Connected!");
 
-        // TODO: Initialize MQTT Manager here using cfg.mqtt_ip
+        if (mqtt.start() != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to start MQTT Manager");
+        }
     } else {
         ESP_LOGI(TAG, "Device is NOT configured. Starting Setup Server...");
 
@@ -72,6 +76,9 @@ extern "C" void app_main() {
     }
     while (true) {
         ESP_LOGI(TAG, "Energy Meter heartbeat...");
+        if (mqtt.is_connected()) {
+            mqtt.publish("energy_meter/heartbeat", "{\"status\":\"alive\"}", 0, false);
+        }
         vTaskDelay(pdMS_TO_TICKS(10000));
     }
 }
