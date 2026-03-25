@@ -1,4 +1,4 @@
-#include "setup_server.hpp"
+#include "web_server.hpp"
 #include "wifi_manager.hpp"
 #include "config_manager.hpp"
 #include <esp_log.h>
@@ -9,12 +9,12 @@
 #include <freertos/task.h>
 #include "mdns_manager.hpp"
 
-static const char *TAG = "SetupServer";
+static const char *TAG = "WebServer";
 
 extern const uint8_t index_html_start[] asm("_binary_index_html_start");
 extern const uint8_t index_html_end[]   asm("_binary_index_html_end");
 
-namespace setup_server {
+namespace web_server {
 
 static httpd_handle_t server = nullptr;
 static WifiManager* g_wifi = nullptr;
@@ -282,4 +282,4 @@ void stop() {
     g_config = nullptr;
 }
 
-} // namespace setup_server
+} // namespace web_server

@@ -1,6 +1,6 @@
 #include "wifi_manager.hpp"
 #include "config_manager.hpp"
-#include "setup_server.hpp"
+#include "web_server.hpp"
 #include "board_manager.hpp"
 #include "mdns_manager.hpp"
 #include "mqtt_manager.hpp"
@@ -86,7 +86,7 @@ extern "C" void app_main() {
 
         ESP_LOGI(TAG, "AP Started. Waiting for users to connect to Setup Server...");
 
-        if (setup_server::start(wifi, config_mgr) != ESP_OK) {
+        if (web_server::start(wifi, config_mgr) != ESP_OK) {
             ESP_LOGE(TAG, "Failed to start Setup Server");
         }
     }

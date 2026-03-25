@@ -4,7 +4,7 @@ idf_component_register(
     REQUIRES
         wifi_manager
         config_manager
-        setup_server
+        web_server
         board_manager
         mdns_manager
         mqtt_manager

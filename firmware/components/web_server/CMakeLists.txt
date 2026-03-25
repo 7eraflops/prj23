@@ -1,5 +1,5 @@
 idf_component_register(
-    SRCS "src/setup_server.cpp"
+    SRCS "src/web_server.cpp"
     INCLUDE_DIRS "include"
     REQUIRES esp_http_server lwip esp_wifi esp_netif wifi_manager
              config_manager json mdns_manager
