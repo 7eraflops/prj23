@@ -3,8 +3,10 @@
 #include <freertos/task.h>
 #include <esp_log.h>
 #include <esp_timer.h>
+#include <driver/temperature_sensor.h>
 
 static const char* TAG = "BoardManager";
+static temperature_sensor_handle_t temp_sensor = NULL;
 
 namespace board_manager {
 
@@ -55,6 +57,25 @@ static void input_task(void* pvParameters) {
 
         vTaskDelay(pdMS_TO_TICKS(50));
     }
+}
+
+void init_temperature_sensor() {
+    temperature_sensor_config_t temp_sensor_config = TEMPERATURE_SENSOR_CONFIG_DEFAULT(10, 50);
+    if (temperature_sensor_install(&temp_sensor_config, &temp_sensor) == ESP_OK) {
+        temperature_sensor_enable(temp_sensor);
+        ESP_LOGI(TAG, "MCU Temperature sensor initialized.");
+    } else {
+        ESP_LOGW(TAG, "Failed to install temperature sensor");
+        temp_sensor = NULL;
+    }
+}
+
+float get_mcu_temperature() {
+    float mcu_temp = 0.0f;
+    if (temp_sensor) {
+        temperature_sensor_get_celsius(temp_sensor, &mcu_temp);
+    }
+    return mcu_temp;
 }
 
 esp_err_t init_reset_button(gpio_num_t gpio_num, uint32_t hold_time_ms, std::function<void()> on_long_press) {
