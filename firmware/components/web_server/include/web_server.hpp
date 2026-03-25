@@ -5,7 +5,7 @@
 class WifiManager;
 class ConfigManager;
 
-namespace setup_server {
+namespace web_server {
 
 /**
  * @brief Initialize and start the setup server (HTTP Web server)
@@ -21,4 +21,4 @@ esp_err_t start(WifiManager& wifi, ConfigManager& config);
  */
 void stop();
 
-} // namespace setup_server
+} // namespace web_server
