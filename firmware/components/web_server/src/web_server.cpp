@@ -118,6 +118,30 @@ static esp_err_t api_reboot_post_handler(httpd_req_t *req) {
     return ESP_OK;
 }
 
+static esp_err_t api_config_get_handler(httpd_req_t *req) {
+    if (!g_config) {
+        httpd_resp_send_500(req);
+        return ESP_FAIL;
+    }
+
+    const AppConfig& cfg = g_config->get_config();
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "ssid", cfg.wifi_ssid.c_str());
+    cJSON_AddStringToObject(root, "mqtt_ip", cfg.mqtt_ip.c_str());
+    cJSON_AddStringToObject(root, "mqtt_user", cfg.mqtt_username.c_str());
+    cJSON_AddBoolToObject(root, "configured", g_config->is_configured());
+    
+    // We don't send passwords back
+    
+    const char *json_str = cJSON_PrintUnformatted(root);
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, json_str, strlen(json_str));
+    
+    free((void *)json_str);
+    cJSON_Delete(root);
+    return ESP_OK;
+}
+
 static esp_err_t api_save_post_handler(httpd_req_t *req) {
     if (!g_config) {
         httpd_resp_send_500(req);
@@ -236,6 +260,14 @@ esp_err_t start(WifiManager& wifi, ConfigManager& config) {
         .user_ctx  = NULL
     };
     httpd_register_uri_handler(server, &scan_uri);
+
+    httpd_uri_t config_uri = {
+        .uri       = "/api/config",
+        .method    = HTTP_GET,
+        .handler   = api_config_get_handler,
+        .user_ctx  = NULL
+    };
+    httpd_register_uri_handler(server, &config_uri);
 
     httpd_uri_t save_uri = {
         .uri       = "/api/save",
