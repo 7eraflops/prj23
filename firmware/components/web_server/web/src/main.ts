@@ -12,18 +12,34 @@ interface Broker {
   txt: Record<string, string>;
 }
 
+interface AppConfig {
+  ssid: string;
+  mqtt_ip: string;
+  mqtt_user: string;
+  configured: boolean;
+}
+
 const statusMsg = document.getElementById("statusMsg") as HTMLDivElement;
 const ssidSelect = document.getElementById("ssid") as HTMLSelectElement;
 
 const step1 = document.getElementById("step1") as HTMLDivElement;
 const step2 = document.getElementById("step2") as HTMLDivElement;
+const nav = document.getElementById("nav") as HTMLElement;
 
 const wifiForm = document.getElementById("wifiForm") as HTMLFormElement;
 const mqttForm = document.getElementById("mqttForm") as HTMLFormElement;
 
+const tabWifi = document.getElementById("tabWifi") as HTMLButtonElement;
+const tabMqtt = document.getElementById("tabMqtt") as HTMLButtonElement;
+
+const wifiTitle = document.getElementById("wifiTitle") as HTMLElement;
+const mqttTitle = document.getElementById("mqttTitle") as HTMLElement;
+
 const discoveryList = document.getElementById(
   "discoveryList",
 ) as HTMLDivElement;
+
+let isConfigured = false;
 
 /**
  * Display a status message to the user
@@ -42,6 +58,68 @@ function setStatus(
 }
 
 /**
+ * Switch between tabs
+ */
+function switchTab(tab: "wifi" | "mqtt") {
+  if (tab === "wifi") {
+    step1.classList.add("active");
+    step2.classList.remove("active");
+    tabWifi.classList.add("active");
+    tabMqtt.classList.remove("active");
+    fetchNetworks();
+  } else {
+    step1.classList.remove("active");
+    step2.classList.add("active");
+    tabWifi.classList.remove("active");
+    tabMqtt.classList.add("active");
+    discoverBrokers();
+  }
+}
+
+tabWifi.addEventListener("click", () => switchTab("wifi"));
+tabMqtt.addEventListener("click", () => switchTab("mqtt"));
+
+/**
+ * Fetch current configuration
+ */
+async function fetchConfig() {
+  try {
+    const response = await fetch("/api/config");
+    const config: AppConfig = await response.json();
+    isConfigured = config.configured;
+
+    if (isConfigured) {
+      nav.style.display = "flex";
+      wifiTitle.textContent = "Wi-Fi Settings";
+      mqttTitle.textContent = "MQTT Settings";
+      (document.getElementById("wifiBtn") as HTMLButtonElement).textContent = "Update Wi-Fi";
+      (document.getElementById("saveBtn") as HTMLButtonElement).textContent = "Update MQTT";
+      
+      // Populate MQTT fields
+      if (config.mqtt_ip) {
+        const parts = config.mqtt_ip.split("://");
+        let protocol = "mqtt://";
+        let hostPort = config.mqtt_ip;
+        if (parts.length > 1) {
+            protocol = parts[0] + "://";
+            hostPort = parts[1];
+        }
+        
+        const hostParts = hostPort.split(":");
+        (document.getElementById("mqtt_type") as HTMLSelectElement).value = protocol;
+        (document.getElementById("mqtt_host") as HTMLInputElement).value = hostParts[0];
+        if (hostParts.length > 1) {
+            (document.getElementById("mqtt_port") as HTMLInputElement).value = hostParts[1];
+        }
+      }
+      (document.getElementById("mqtt_user") as HTMLInputElement).value = config.mqtt_user || "";
+    }
+  } catch (err) {
+    console.error("Config fetch error:", err);
+  }
+}
+
+/**
  * Fetch available Wi-Fi networks
  */
 async function fetchNetworks() {
@@ -49,6 +127,7 @@ async function fetchNetworks() {
     const response = await fetch("/api/scan");
     const networks: Network[] = await response.json();
 
+    const currentSsid = ssidSelect.value;
     ssidSelect.innerHTML = '<option value="">Select a network...</option>';
     networks.forEach((net) => {
       const opt = document.createElement("option");
@@ -56,6 +135,7 @@ async function fetchNetworks() {
       opt.textContent = `${net.ssid} (${net.rssi}dBm)${net.secure ? " 🔒" : ""}`;
       ssidSelect.appendChild(opt);
     });
+    if (currentSsid) ssidSelect.value = currentSsid;
   } catch (err) {
     console.error("Scan error:", err);
   }
@@ -153,7 +233,13 @@ function handleConnectedState(staIp: string) {
       window.location.href = localUrl;
     }, 4000);
   } else {
-    switchToStep2();
+    if (!isConfigured) {
+        switchToStep2();
+    } else {
+        setStatus("Wi-Fi Connected!", "success");
+        setTimeout(() => setStatus("", "none"), 3000);
+        (document.getElementById("wifiBtn") as HTMLButtonElement).disabled = false;
+    }
   }
 }
 
@@ -174,9 +260,7 @@ function handlePotentialIPShift() {
 
 function switchToStep2() {
   setStatus("", "none"); // Clear the "Saving WiFi..." banner
-  step1.classList.remove("active");
-  step2.classList.add("active");
-  discoverBrokers();
+  switchTab("mqtt");
 }
 
 /**
@@ -255,18 +339,29 @@ mqttForm.addEventListener("submit", async (e) => {
 
     if (!response.ok) throw new Error("Save failed");
 
-    setStatus("All set! Rebooting device...", "success");
-    await fetch("/api/reboot", { method: "POST" });
+    if (!isConfigured) {
+        setStatus("All set! Rebooting device...", "success");
+        await fetch("/api/reboot", { method: "POST" });
 
-    // Disable inputs
-    Array.from(mqttForm.elements).forEach((el) => {
-      (el as HTMLInputElement).disabled = true;
-    });
+        // Disable inputs
+        Array.from(mqttForm.elements).forEach((el) => {
+            (el as HTMLInputElement).disabled = true;
+        });
+    } else {
+        setStatus("MQTT configuration saved!", "success");
+        setTimeout(() => setStatus("", "none"), 3000);
+        (document.getElementById("saveBtn") as HTMLButtonElement).disabled = false;
+    }
   } catch (err) {
     setStatus("Failed to save. Try again.", "error");
     (document.getElementById("saveBtn") as HTMLButtonElement).disabled = false;
   }
 });
 
-// Start by fetching networks
-fetchNetworks();
+// Initialization
+async function init() {
+    await fetchConfig();
+    fetchNetworks();
+}
+
+init();

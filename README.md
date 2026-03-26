@@ -45,16 +45,17 @@ A custom ESP32-based energy meter measuring up to 12 channels across a 3-phase s
 ### Phase 2: Pre-Hardware System Features (Current)
 *Goal: Implement system-level features that can be tested on an ESP32 dev board before the custom PCBs arrive.*
 
+- [x] **Continuous Web Server**
+  - Modify web server to remain active on the local network post-provisioning.
 - [ ] **Over-The-Air (OTA) Updates**
   - Implement OTA flashing mechanism.
   - Add an `/update` endpoint to the local web server to allow uploading firmware binaries.
-- [ ] **Continuous Web Server & Calibration Config**
-  - Modify `web_setup` to remain active on the local network post-provisioning.
-  - Add NVS fields in `config_manager` for CT and voltage divider multipliers.
-  - Add a `/calibration` web page to view and edit multipliers dynamically.
 - [ ] **Two-Way MQTT Communication (Device Control)**
   - Add Home Assistant "Button" entities via HA Discovery (e.g., "Reboot").
   - Subscribe to command topics in `mqtt_manager` and execute device actions.
+- [ ] **Calibration & Multiplier Config**
+  - Add NVS fields in `config_manager` for CT and voltage divider multipliers.
+  - Add a `/calibration` web page to view and edit multipliers dynamically.
 
 ### Phase 3: Hardware Driver Preparation
 *Goal: Write the SPI driver for the ATM90E32AS using the datasheet.*

@@ -65,8 +65,13 @@ esp_err_t WifiManager::connect(const std::string& ssid, const std::string& passw
         wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
     }
 
-    // Keep AP alive during setup by using APSTA mode
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
+    // Default to APSTA if no mode is explicitly set to allow concurrent scan/setup,
+    // but the caller can call set_mode(WIFI_MODE_STA) before connect() to disable AP.
+    wifi_mode_t current_mode;
+    if (esp_wifi_get_mode(&current_mode) != ESP_OK || current_mode == WIFI_MODE_NULL) {
+        ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
+    }
+
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
     ESP_ERROR_CHECK(esp_wifi_connect());
@@ -148,6 +153,11 @@ void WifiManager::wait_for_connection() {
 esp_err_t WifiManager::clear_settings() {
     ESP_LOGI(TAG, "Restoring Wi-Fi stack to defaults...");
     return esp_wifi_restore();
+}
+
+esp_err_t WifiManager::set_mode(wifi_mode_t mode) {
+    ESP_LOGI(TAG, "Setting Wi-Fi mode to: %d", (int)mode);
+    return esp_wifi_set_mode(mode);
 }
 
 std::string WifiManager::get_sta_ip() const {
