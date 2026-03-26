@@ -60,6 +60,13 @@ public:
     esp_err_t clear_settings();
 
     /**
+     * @brief Sets the Wi-Fi mode (STA, AP, or APSTA).
+     * @param mode The desired wifi_mode_t.
+     * @return ESP_OK on success.
+     */
+    esp_err_t set_mode(wifi_mode_t mode);
+
+    /**
      * @brief Returns true if the device is currently connected to Wi-Fi.
      */
     bool is_connected() const { return _is_connected; }
