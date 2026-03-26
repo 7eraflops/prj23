@@ -19,6 +19,49 @@
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
       }
       h2 { margin-top: 0; color: #333; }
+      nav {
+        display: flex;
+        border-bottom: 1px solid #ddd;
+        margin-bottom: 1.5rem;
+      }
+      .tab-btn {
+        flex: 1;
+        padding: 0.8rem;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        cursor: pointer;
+        font-weight: bold;
+        color: #666;
+        transition: all 0.2s;
+        margin: 0;
+        width: auto;
+        border-radius: 0;
+      }
+      .tab-btn:first-child {
+        border-top-left-radius: 4px;
+      }
+      .tab-btn:last-child {
+        border-top-right-radius: 4px;
+      }
+      .tab-btn.active {
+        color: #007bff;
+        border-bottom-color: #007bff;
+      }
+      .tab-btn:hover {
+        background: #007bff;
+        color: white;
+      }
+      /* Ensure active tab hover doesn't have a jarring underline transition */
+      .tab-btn.active:hover {
+        background: #007bff;
+        color: white;
+        border-bottom-color: transparent;
+      }
+      .tab-btn:disabled {
+        color: #ccc;
+        cursor: not-allowed;
+      }
       label {
         display: block;
         margin-top: 1.2rem;
@@ -73,11 +116,16 @@
   </head>
   <body>
     <div class="card">
+      <nav id="nav" style="display: none;">
+        <button class="tab-btn active" id="tabWifi">Wi-Fi</button>
+        <button class="tab-btn" id="tabMqtt">MQTT</button>
+      </nav>
+
       <div id="statusMsg" class="status"></div>
 
       <!-- STEP 1: WiFi Setup -->
       <div id="step1" class="step active">
-        <h2>Step 1: Wi-Fi Setup</h2>
+        <h2 id="wifiTitle">Step 1: Wi-Fi Setup</h2>
         <form id="wifiForm">
           <label for="ssid">Wi-Fi Network</label>
           <select id="ssid" name="ssid" required>
@@ -85,7 +133,7 @@
           </select>
 
           <label for="password">Wi-Fi Password</label>
-          <input type="password" id="password" name="password" />
+          <input type="password" id="password" name="password" placeholder="Leave blank to keep current" />
 
           <button type="submit" id="wifiBtn">Connect to Wi-Fi</button>
         </form>
@@ -93,7 +141,7 @@
 
       <!-- STEP 2: MQTT Setup -->
       <div id="step2" class="step">
-        <h2>Step 2: MQTT Setup</h2>
+        <h2 id="mqttTitle">Step 2: MQTT Setup</h2>
         <div id="discoveryList"></div>
         
         <form id="mqttForm">
@@ -113,7 +161,7 @@
           <input type="text" id="mqtt_user" name="mqtt_user" />
 
           <label for="mqtt_pass">Password (Optional)</label>
-          <input type="password" id="mqtt_pass" name="mqtt_pass" />
+          <input type="password" id="mqtt_pass" name="mqtt_pass" placeholder="Leave blank to keep current" />
 
           <button type="submit" id="saveBtn">Save & Finish</button>
         </form>

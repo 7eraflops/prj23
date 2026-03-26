@@ -19,6 +19,49 @@
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
       }
       h2 { margin-top: 0; color: #333; }
+      nav {
+        display: flex;
+        border-bottom: 1px solid #ddd;
+        margin-bottom: 1.5rem;
+      }
+      .tab-btn {
+        flex: 1;
+        padding: 0.8rem;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        cursor: pointer;
+        font-weight: bold;
+        color: #666;
+        transition: all 0.2s;
+        margin: 0;
+        width: auto;
+        border-radius: 0;
+      }
+      .tab-btn:first-child {
+        border-top-left-radius: 4px;
+      }
+      .tab-btn:last-child {
+        border-top-right-radius: 4px;
+      }
+      .tab-btn.active {
+        color: #007bff;
+        border-bottom-color: #007bff;
+      }
+      .tab-btn:hover {
+        background: #007bff;
+        color: white;
+      }
+      /* Ensure active tab hover doesn't have a jarring underline transition */
+      .tab-btn.active:hover {
+        background: #007bff;
+        color: white;
+        border-bottom-color: transparent;
+      }
+      .tab-btn:disabled {
+        color: #ccc;
+        cursor: not-allowed;
+      }
       label {
         display: block;
         margin-top: 1.2rem;
@@ -73,11 +116,16 @@
   </head>
   <body>
     <div class="card">
+      <nav id="nav" style="display: none;">
+        <button class="tab-btn active" id="tabWifi">Wi-Fi</button>
+        <button class="tab-btn" id="tabMqtt">MQTT</button>
+      </nav>
+
       <div id="statusMsg" class="status"></div>
 
       <!-- STEP 1: WiFi Setup -->
       <div id="step1" class="step active">
-        <h2>Step 1: Wi-Fi Setup</h2>
+        <h2 id="wifiTitle">Step 1: Wi-Fi Setup</h2>
         <form id="wifiForm">
           <label for="ssid">Wi-Fi Network</label>
           <select id="ssid" name="ssid" required>
@@ -85,7 +133,7 @@
           </select>
 
           <label for="password">Wi-Fi Password</label>
-          <input type="password" id="password" name="password" />
+          <input type="password" id="password" name="password" placeholder="Leave blank to keep current" />
 
           <button type="submit" id="wifiBtn">Connect to Wi-Fi</button>
         </form>
@@ -93,7 +141,7 @@
 
       <!-- STEP 2: MQTT Setup -->
       <div id="step2" class="step">
-        <h2>Step 2: MQTT Setup</h2>
+        <h2 id="mqttTitle">Step 2: MQTT Setup</h2>
         <div id="discoveryList"></div>
         
         <form id="mqttForm">
@@ -113,7 +161,7 @@
           <input type="text" id="mqtt_user" name="mqtt_user" />
 
           <label for="mqtt_pass">Password (Optional)</label>
-          <input type="password" id="mqtt_pass" name="mqtt_pass" />
+          <input type="password" id="mqtt_pass" name="mqtt_pass" placeholder="Leave blank to keep current" />
 
           <button type="submit" id="saveBtn">Save & Finish</button>
         </form>
@@ -121,12 +169,12 @@
     </div>
 
     <script>
-var K=document.getElementById("statusMsg"),Q=document.getElementById("ssid"),Y=document.getElementById("step1"),Z=document.getElementById("step2"),V=document.getElementById("wifiForm"),O=document.getElementById("mqttForm"),J=document.getElementById("discoveryList");function E(x,z){if(z==="none"){K.style.display="none";return}K.innerHTML=x,K.className=`status ${z}`,K.style.display="block"}async function _(){try{let z=await(await fetch("/api/scan")).json();Q.innerHTML='<option value="">Select a network...</option>',z.forEach((j)=>{let A=document.createElement("option");A.value=j.ssid,A.textContent=`${j.ssid} (${j.rssi}dBm)${j.secure?" \uD83D\uDD12":""}`,Q.appendChild(A)})}catch(x){console.error("Scan error:",x)}}V.addEventListener("submit",async(x)=>{x.preventDefault();let z=new FormData(V),j=Object.fromEntries(z.entries());E("Saving WiFi configuration and connecting...","info"),document.getElementById("wifiBtn").disabled=!0;try{if(!(await fetch("/api/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(j)})).ok)throw Error("Save failed");W()}catch(A){console.warn("Save request error, starting poll anyway (network switch probable)"),W()}});async function W(){let x=0,z=0,j=setInterval(async()=>{x++;try{let G=await(await fetch("/api/wifi-status",{signal:AbortSignal.timeout(1500)})).json();if(G.connected&&G.sta_ip!=="0.0.0.0"){if(z++,z>=2)clearInterval(j),$(G.sta_ip)}else if(z=0,x>40)clearInterval(j),E("Timed out waiting for WiFi. Please check SSID/Password and try again.","error"),document.getElementById("wifiBtn").disabled=!1}catch(A){if(x>15)clearInterval(j),B()}},2000)}function $(x){let j=`http://${x}`;if(!(window.location.hostname==="energy-meter.local"||window.location.hostname===x))E(`<strong>Connected to Wi-Fi!</strong><br>
+var O=document.getElementById("statusMsg"),Q=document.getElementById("ssid"),$=document.getElementById("step1"),z=document.getElementById("step2"),D=document.getElementById("nav"),B=document.getElementById("wifiForm"),X=document.getElementById("mqttForm"),Y=document.getElementById("tabWifi"),Z=document.getElementById("tabMqtt"),W=document.getElementById("wifiTitle"),F=document.getElementById("mqttTitle"),K=document.getElementById("discoveryList"),V=!1;function H(x,A){if(A==="none"){O.style.display="none";return}O.innerHTML=x,O.className=`status ${A}`,O.style.display="block"}function _(x){if(x==="wifi")$.classList.add("active"),z.classList.remove("active"),Y.classList.add("active"),Z.classList.remove("active"),R();else $.classList.remove("active"),z.classList.add("active"),Y.classList.remove("active"),Z.classList.add("active"),T()}Y.addEventListener("click",()=>_("wifi"));Z.addEventListener("click",()=>_("mqtt"));async function L(){try{let A=await(await fetch("/api/config")).json();if(V=A.configured,V){if(D.style.display="flex",W.textContent="Wi-Fi Settings",F.textContent="MQTT Settings",document.getElementById("wifiBtn").textContent="Update Wi-Fi",document.getElementById("saveBtn").textContent="Update MQTT",A.mqtt_ip){let j=A.mqtt_ip.split("://"),E="mqtt://",G=A.mqtt_ip;if(j.length>1)E=j[0]+"://",G=j[1];let J=G.split(":");if(document.getElementById("mqtt_type").value=E,document.getElementById("mqtt_host").value=J[0],J.length>1)document.getElementById("mqtt_port").value=J[1]}document.getElementById("mqtt_user").value=A.mqtt_user||""}}catch(x){console.error("Config fetch error:",x)}}async function R(){try{let A=await(await fetch("/api/scan")).json(),j=Q.value;if(Q.innerHTML='<option value="">Select a network...</option>',A.forEach((E)=>{let G=document.createElement("option");G.value=E.ssid,G.textContent=`${E.ssid} (${E.rssi}dBm)${E.secure?" \uD83D\uDD12":""}`,Q.appendChild(G)}),j)Q.value=j}catch(x){console.error("Scan error:",x)}}B.addEventListener("submit",async(x)=>{x.preventDefault();let A=new FormData(B),j=Object.fromEntries(A.entries());H("Saving WiFi configuration and connecting...","info"),document.getElementById("wifiBtn").disabled=!0;try{if(!(await fetch("/api/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(j)})).ok)throw Error("Save failed");N()}catch(E){console.warn("Save request error, starting poll anyway (network switch probable)"),N()}});async function N(){let x=0,A=0,j=setInterval(async()=>{x++;try{let G=await(await fetch("/api/wifi-status",{signal:AbortSignal.timeout(1500)})).json();if(G.connected&&G.sta_ip!=="0.0.0.0"){if(A++,A>=2)clearInterval(j),k(G.sta_ip)}else if(A=0,x>40)clearInterval(j),H("Timed out waiting for WiFi. Please check SSID/Password and try again.","error"),document.getElementById("wifiBtn").disabled=!1}catch(E){if(x>15)clearInterval(j),M()}},2000)}function k(x){let j=`http://${x}`;if(!(window.location.hostname==="energy-meter.local"||window.location.hostname===x))H(`<strong>Connected to Wi-Fi!</strong><br>
        The device is now reachable at its new IP: <strong>${x}</strong><br><br>
        <a href="http://energy-meter.local" style="color:white;font-weight:bold;display:block;margin-bottom:10px;">Go to energy-meter.local</a>
-       <a href="${j}" style="color:white;text-decoration:underline;">Or use direct IP: ${x}</a>`,"success"),setTimeout(()=>{window.location.href="http://energy-meter.local"},4000);else N()}function B(){E(`<strong>Connection Lost (Mode Change)</strong><br>
+       <a href="${j}" style="color:white;text-decoration:underline;">Or use direct IP: ${x}</a>`,"success"),setTimeout(()=>{window.location.href="http://energy-meter.local"},4000);else if(!V)P();else H("Wi-Fi Connected!","success"),setTimeout(()=>H("","none"),3000),document.getElementById("wifiBtn").disabled=!1}function M(){H(`<strong>Connection Lost (Mode Change)</strong><br>
        The device has likely connected to Wi-Fi and moved to its new address.<br><br>
-       <a href="http://energy-meter.local" style="color:white;font-weight:bold;">Continue at energy-meter.local</a>`,"info"),setTimeout(()=>{window.location.href="http://energy-meter.local"},5000)}function N(){E("","none"),Y.classList.remove("active"),Z.classList.add("active"),P()}async function P(){J.innerHTML="<p>Searching for local MQTT brokers (mDNS)...</p>";try{let z=await(await fetch("/api/mqtt-brokers")).json();if(z.length===0){J.innerHTML="<p>No brokers discovered automatically.</p>";return}J.innerHTML="<strong>Discovered Brokers:</strong>",z.forEach((j)=>{let A=document.createElement("div");A.className="discovery-item",A.textContent=`${j.hostname} (${j.ip}:${j.port})`,A.onclick=()=>{document.getElementById("mqtt_host").value=j.ip,document.getElementById("mqtt_port").value=j.port.toString();let G=document.getElementById("mqtt_type"),H=j.protocol||"mqtt://";if(j.txt&&(j.txt.protocol==="ws"||j.txt.transport==="ws"))H="ws://";else if([8080,8083,9001].includes(j.port))H="ws://";G.value=H},J.appendChild(A)})}catch(x){J.innerHTML=""}}O.addEventListener("submit",async(x)=>{x.preventDefault();let z=new FormData(O),j=Object.fromEntries(z.entries()),G={mqtt_uri:`${j.mqtt_type}${j.mqtt_host}:${j.mqtt_port}`,mqtt_user:j.mqtt_user,mqtt_pass:j.mqtt_pass};E("Saving MQTT configuration...","info"),document.getElementById("saveBtn").disabled=!0;try{if(!(await fetch("/api/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(G)})).ok)throw Error("Save failed");E("All set! Rebooting device...","success"),await fetch("/api/reboot",{method:"POST"}),Array.from(O.elements).forEach((X)=>{X.disabled=!0})}catch(H){E("Failed to save. Try again.","error"),document.getElementById("saveBtn").disabled=!1}});_();
+       <a href="http://energy-meter.local" style="color:white;font-weight:bold;">Continue at energy-meter.local</a>`,"info"),setTimeout(()=>{window.location.href="http://energy-meter.local"},5000)}function P(){H("","none"),_("mqtt")}async function T(){K.innerHTML="<p>Searching for local MQTT brokers (mDNS)...</p>";try{let A=await(await fetch("/api/mqtt-brokers")).json();if(A.length===0){K.innerHTML="<p>No brokers discovered automatically.</p>";return}K.innerHTML="<strong>Discovered Brokers:</strong>",A.forEach((j)=>{let E=document.createElement("div");E.className="discovery-item",E.textContent=`${j.hostname} (${j.ip}:${j.port})`,E.onclick=()=>{document.getElementById("mqtt_host").value=j.ip,document.getElementById("mqtt_port").value=j.port.toString();let G=document.getElementById("mqtt_type"),J=j.protocol||"mqtt://";if(j.txt&&(j.txt.protocol==="ws"||j.txt.transport==="ws"))J="ws://";else if([8080,8083,9001].includes(j.port))J="ws://";G.value=J},K.appendChild(E)})}catch(x){K.innerHTML=""}}X.addEventListener("submit",async(x)=>{x.preventDefault();let A=new FormData(X),j=Object.fromEntries(A.entries()),G={mqtt_uri:`${j.mqtt_type}${j.mqtt_host}:${j.mqtt_port}`,mqtt_user:j.mqtt_user,mqtt_pass:j.mqtt_pass};H("Saving MQTT configuration...","info"),document.getElementById("saveBtn").disabled=!0;try{if(!(await fetch("/api/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(G)})).ok)throw Error("Save failed");if(!V)H("All set! Rebooting device...","success"),await fetch("/api/reboot",{method:"POST"}),Array.from(X.elements).forEach((U)=>{U.disabled=!0});else H("MQTT configuration saved!","success"),setTimeout(()=>H("","none"),3000),document.getElementById("saveBtn").disabled=!1}catch(J){H("Failed to save. Try again.","error"),document.getElementById("saveBtn").disabled=!1}});async function q(){await L(),R()}q();
 
 </script>
   </body>
