@@ -52,10 +52,18 @@ extern "C" void app_main() {
     // Load saved configuration from flash memory
     config_mgr.load();
 
+    // Always start the Web Server for local management
+    if (web_server::start(wifi, config_mgr) != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to start Web Server");
+    }
+
     if (config_mgr.is_configured()) {
         ESP_LOGI(TAG, "Device is configured. Connecting to Wi-Fi...");
 
         const AppConfig& cfg = config_mgr.get_config();
+        
+        // Turn off AP mode if we are already configured
+        wifi.set_mode(WIFI_MODE_STA);
         wifi.connect(cfg.wifi_ssid, cfg.wifi_password);
 
         ESP_LOGI(TAG, "Waiting for WiFi connection...");
@@ -71,7 +79,7 @@ extern "C" void app_main() {
             ESP_LOGE(TAG, "Failed to start MQTT Manager");
         }
     } else {
-        ESP_LOGI(TAG, "Device is NOT configured. Starting Setup Server...");
+        ESP_LOGI(TAG, "Device is NOT configured. Starting Provisioning AP...");
 
         uint8_t mac[6];
         esp_read_mac(mac, ESP_MAC_WIFI_STA);
@@ -84,11 +92,7 @@ extern "C" void app_main() {
             return;
         }
 
-        ESP_LOGI(TAG, "AP Started. Waiting for users to connect to Setup Server...");
-
-        if (web_server::start(wifi, config_mgr) != ESP_OK) {
-            ESP_LOGE(TAG, "Failed to start Setup Server");
-        }
+        ESP_LOGI(TAG, "AP Started. Waiting for users to connect to Web Server...");
     }
     while (true) {
         ESP_LOGI(TAG, "Energy Meter heartbeat...");
