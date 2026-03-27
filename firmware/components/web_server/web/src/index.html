@@ -119,6 +119,7 @@
       <nav id="nav" style="display: none;">
         <button class="tab-btn active" id="tabWifi">Wi-Fi</button>
         <button class="tab-btn" id="tabMqtt">MQTT</button>
+        <button class="tab-btn" id="tabUpdate">Update</button>
       </nav>
 
       <div id="statusMsg" class="status"></div>
@@ -164,6 +165,28 @@
           <input type="password" id="mqtt_pass" name="mqtt_pass" placeholder="Leave blank to keep current" />
 
           <button type="submit" id="saveBtn">Save & Finish</button>
+        </form>
+      </div>
+
+      <!-- STEP 3: Firmware Update -->
+      <div id="step3" class="step">
+        <h2 id="updateTitle">Firmware Update</h2>
+        <p style="font-size: 0.9rem; color: #666; margin-bottom: 1.5rem;">
+          Select a firmware binary (.bin) to upload to the device.
+        </p>
+        
+        <form id="updateForm">
+          <label for="otaFile">Firmware Binary</label>
+          <input type="file" id="otaFile" name="otaFile" accept=".bin" required />
+
+          <div id="otaProgressContainer" style="display: none; margin-top: 1.5rem;">
+            <div style="width: 100%; background: #eee; border-radius: 4px; height: 10px; overflow: hidden;">
+              <div id="otaProgressBar" style="width: 0%; background: #007bff; height: 100%; transition: width 0.2s;"></div>
+            </div>
+            <p id="otaStatusText" style="font-size: 0.8rem; text-align: center; margin-top: 0.5rem; color: #666;">0%</p>
+          </div>
+
+          <button type="submit" id="otaBtn">Upload & Update</button>
         </form>
       </div>
     </div>
