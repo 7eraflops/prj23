@@ -2,8 +2,10 @@ CONFIG_IDF_TARGET="esp32s3"
 CONFIG_WIFI_PROV_AUTOSTOP_TIMEOUT=30
 CONFIG_COMPILER_CXX_EXCEPTIONS=y
 
-# Increase flash size to 4MB to accommodate larger binaries
-CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+# Increase flash size to 8MB to match final module
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
 
-# Use a partition table with a larger app partition (1.5MB)
-CONFIG_PARTITION_TABLE_SINGLE_APP_LARGE=y
+# Use a custom partition table for OTA
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_FILENAME="partitions.csv"
+CONFIG_PARTITION_TABLE_OFFSET=0x8000
