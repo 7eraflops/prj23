@@ -58,6 +58,7 @@ firmware/dependencies.lock
 firmware/.cache/
 firmware/sdkconfig
 sdkconfig.old
+!firmware/partitions.csv
 
 # CMake & Ninja artifacts
 CMakeCache.txt
