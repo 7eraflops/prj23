@@ -1,7 +1,7 @@
 idf_component_register(
     SRCS "src/main.cpp"
     INCLUDE_DIRS "."
-    REQUIRES
+    PRIV_REQUIRES
         wifi_manager
         config_manager
         web_server
