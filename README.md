@@ -47,7 +47,7 @@ A custom ESP32-based energy meter measuring up to 12 channels across a 3-phase s
 
 - [x] **Continuous Web Server**
   - Modify web server to remain active on the local network post-provisioning.
-- [ ] **Over-The-Air (OTA) Updates**
+- [x] **Over-The-Air (OTA) Updates**
   - Implement OTA flashing mechanism.
   - Add an `/update` endpoint to the local web server to allow uploading firmware binaries.
 - [ ] **Two-Way MQTT Communication (Device Control)**

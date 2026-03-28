@@ -24,16 +24,24 @@ const ssidSelect = document.getElementById("ssid") as HTMLSelectElement;
 
 const step1 = document.getElementById("step1") as HTMLDivElement;
 const step2 = document.getElementById("step2") as HTMLDivElement;
+const step3 = document.getElementById("step3") as HTMLDivElement;
 const nav = document.getElementById("nav") as HTMLElement;
 
 const wifiForm = document.getElementById("wifiForm") as HTMLFormElement;
 const mqttForm = document.getElementById("mqttForm") as HTMLFormElement;
+const updateForm = document.getElementById("updateForm") as HTMLFormElement;
 
 const tabWifi = document.getElementById("tabWifi") as HTMLButtonElement;
 const tabMqtt = document.getElementById("tabMqtt") as HTMLButtonElement;
+const tabUpdate = document.getElementById("tabUpdate") as HTMLButtonElement;
 
 const wifiTitle = document.getElementById("wifiTitle") as HTMLElement;
 const mqttTitle = document.getElementById("mqttTitle") as HTMLElement;
+
+const otaProgressContainer = document.getElementById("otaProgressContainer") as HTMLDivElement;
+const otaProgressBar = document.getElementById("otaProgressBar") as HTMLDivElement;
+const otaStatusText = document.getElementById("otaStatusText") as HTMLParagraphElement;
+const otaBtn = document.getElementById("otaBtn") as HTMLButtonElement;
 
 const discoveryList = document.getElementById(
   "discoveryList",
@@ -60,24 +68,22 @@ function setStatus(
 /**
  * Switch between tabs
  */
-function switchTab(tab: "wifi" | "mqtt") {
-  if (tab === "wifi") {
-    step1.classList.add("active");
-    step2.classList.remove("active");
-    tabWifi.classList.add("active");
-    tabMqtt.classList.remove("active");
-    fetchNetworks();
-  } else {
-    step1.classList.remove("active");
-    step2.classList.add("active");
-    tabWifi.classList.remove("active");
-    tabMqtt.classList.add("active");
-    discoverBrokers();
-  }
+function switchTab(tab: "wifi" | "mqtt" | "update") {
+  step1.classList.toggle("active", tab === "wifi");
+  step2.classList.toggle("active", tab === "mqtt");
+  step3.classList.toggle("active", tab === "update");
+  
+  tabWifi.classList.toggle("active", tab === "wifi");
+  tabMqtt.classList.toggle("active", tab === "mqtt");
+  tabUpdate.classList.toggle("active", tab === "update");
+
+  if (tab === "wifi") fetchNetworks();
+  if (tab === "mqtt") discoverBrokers();
 }
 
 tabWifi.addEventListener("click", () => switchTab("wifi"));
 tabMqtt.addEventListener("click", () => switchTab("mqtt"));
+tabUpdate.addEventListener("click", () => switchTab("update"));
 
 /**
  * Fetch current configuration
@@ -113,6 +119,9 @@ async function fetchConfig() {
         }
       }
       (document.getElementById("mqtt_user") as HTMLInputElement).value = config.mqtt_user || "";
+    } else {
+      // Hide Update tab during initial setup
+      tabUpdate.style.display = "none";
     }
   } catch (err) {
     console.error("Config fetch error:", err);
@@ -356,6 +365,50 @@ mqttForm.addEventListener("submit", async (e) => {
     setStatus("Failed to save. Try again.", "error");
     (document.getElementById("saveBtn") as HTMLButtonElement).disabled = false;
   }
+});
+
+/**
+ * Handle Firmware Update (OTA) submission
+ */
+updateForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const fileInput = document.getElementById("otaFile") as HTMLInputElement;
+  if (!fileInput.files || fileInput.files.length === 0) return;
+
+  const file = fileInput.files[0];
+  const xhr = new XMLHttpRequest();
+
+  otaProgressContainer.style.display = "block";
+  otaBtn.disabled = true;
+  setStatus("Uploading firmware...", "info");
+
+  xhr.upload.addEventListener("progress", (evt) => {
+    if (evt.lengthComputable) {
+      const percent = Math.round((evt.loaded / evt.total) * 100);
+      otaProgressBar.style.width = percent + "%";
+      otaStatusText.textContent = percent + "%";
+    }
+  });
+
+  xhr.addEventListener("load", () => {
+    if (xhr.status === 200) {
+      setStatus("Update successful! Rebooting...", "success");
+      otaStatusText.textContent = "Done! Rebooting...";
+    } else {
+      setStatus("Update failed. Please try again.", "error");
+      otaBtn.disabled = false;
+      otaProgressContainer.style.display = "none";
+    }
+  });
+
+  xhr.addEventListener("error", () => {
+    setStatus("Network error during upload.", "error");
+    otaBtn.disabled = false;
+    otaProgressContainer.style.display = "none";
+  });
+
+  xhr.open("POST", "/api/update");
+  xhr.send(file);
 });
 
 // Initialization

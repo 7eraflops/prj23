@@ -8,6 +8,8 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include "mdns_manager.hpp"
+#include <esp_ota_ops.h>
+#include <algorithm>
 
 static const char *TAG = "WebServer";
 
@@ -34,7 +36,7 @@ static esp_err_t api_scan_get_handler(httpd_req_t *req) {
     }
 
     auto networks = g_wifi->scan_networks();
-    
+
     cJSON *root = cJSON_CreateArray();
     for (const auto& net : networks) {
         cJSON *item = cJSON_CreateObject();
@@ -43,11 +45,11 @@ static esp_err_t api_scan_get_handler(httpd_req_t *req) {
         cJSON_AddBoolToObject(item, "secure", net.requires_password);
         cJSON_AddItemToArray(root, item);
     }
-    
+
     const char *json_str = cJSON_PrintUnformatted(root);
     httpd_resp_set_type(req, "application/json");
     httpd_resp_send(req, json_str, strlen(json_str));
-    
+
     free((void *)json_str);
     cJSON_Delete(root);
     return ESP_OK;
@@ -67,11 +69,11 @@ static esp_err_t api_wifi_status_get_handler(httpd_req_t *req) {
     cJSON *root = cJSON_CreateObject();
     cJSON_AddBoolToObject(root, "connected", g_wifi->is_connected());
     cJSON_AddStringToObject(root, "sta_ip", g_wifi->get_sta_ip().c_str());
-    
+
     const char *json_str = cJSON_PrintUnformatted(root);
     httpd_resp_set_type(req, "application/json");
     httpd_resp_send(req, json_str, strlen(json_str));
-    
+
     free((void *)json_str);
     cJSON_Delete(root);
     return ESP_OK;
@@ -84,7 +86,7 @@ static esp_err_t api_mqtt_discovery_get_handler(httpd_req_t *req) {
     }
 
     auto brokers = MdnsManager::discover_mqtt_brokers();
-    
+
     cJSON *root = cJSON_CreateArray();
     for (const auto& b : brokers) {
         cJSON *item = cJSON_CreateObject();
@@ -92,20 +94,20 @@ static esp_err_t api_mqtt_discovery_get_handler(httpd_req_t *req) {
         cJSON_AddStringToObject(item, "ip", b.ip.c_str());
         cJSON_AddNumberToObject(item, "port", b.port);
         cJSON_AddStringToObject(item, "protocol", b.get_protocol().c_str());
-        
+
         cJSON *txt_obj = cJSON_CreateObject();
         for (const auto& [key, val] : b.txt) {
             cJSON_AddStringToObject(txt_obj, key.c_str(), val.c_str());
         }
         cJSON_AddItemToObject(item, "txt", txt_obj);
-        
+
         cJSON_AddItemToArray(root, item);
     }
-    
+
     const char *json_str = cJSON_PrintUnformatted(root);
     httpd_resp_set_type(req, "application/json");
     httpd_resp_send(req, json_str, strlen(json_str));
-    
+
     free((void *)json_str);
     cJSON_Delete(root);
     return ESP_OK;
@@ -114,6 +116,91 @@ static esp_err_t api_mqtt_discovery_get_handler(httpd_req_t *req) {
 static esp_err_t api_reboot_post_handler(httpd_req_t *req) {
     httpd_resp_send(req, "{\"status\":\"rebooting\"}", -1);
     ESP_LOGI(TAG, "Reboot requested via API...");
+    xTaskCreate(reboot_task, "reboot_task", 2048, NULL, 5, NULL);
+    return ESP_OK;
+}
+
+static esp_err_t api_ota_update_post_handler(httpd_req_t *req) {
+    esp_ota_handle_t update_handle = 0;
+    const esp_partition_t *update_partition = esp_ota_get_next_update_partition(NULL);
+
+    if (update_partition == NULL) {
+        ESP_LOGE(TAG, "Failed to get next update partition");
+        httpd_resp_send_500(req);
+        return ESP_FAIL;
+    }
+
+    ESP_LOGI(TAG, "Starting OTA update on partition: %s", update_partition->label);
+
+    esp_err_t err = esp_ota_begin(update_partition, OTA_SIZE_UNKNOWN, &update_handle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "esp_ota_begin failed (%s)", esp_err_to_name(err));
+        httpd_resp_send_500(req);
+        return ESP_FAIL;
+    }
+
+    const int BUF_SIZE = 2048;
+    char *buf = (char *)malloc(BUF_SIZE);
+    if (!buf) {
+        ESP_LOGE(TAG, "Failed to allocate memory for OTA buffer");
+        esp_ota_abort(update_handle);
+        httpd_resp_send_500(req);
+        return ESP_FAIL;
+    }
+
+    int remaining = req->content_len;
+    int received = 0;
+
+    while (remaining > 0) {
+        int recv_len = httpd_req_recv(req, buf, std::min(remaining, BUF_SIZE));
+        if (recv_len <= 0) {
+            if (recv_len == HTTPD_SOCK_ERR_TIMEOUT) {
+                continue;
+            }
+            ESP_LOGE(TAG, "OTA receive failed after %d bytes", received);
+            esp_ota_abort(update_handle);
+            free(buf);
+            httpd_resp_send_500(req);
+            return ESP_FAIL;
+        }
+
+        err = esp_ota_write(update_handle, buf, recv_len);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "esp_ota_write failed (%s)", esp_err_to_name(err));
+            esp_ota_abort(update_handle);
+            free(buf);
+            httpd_resp_send_500(req);
+            return ESP_FAIL;
+        }
+
+        remaining -= recv_len;
+        received += recv_len;
+
+        if (received % 102400 == 0) {
+            ESP_LOGI(TAG, "OTA Progress: %d bytes received", received);
+        }
+    }
+
+    free(buf);
+
+    err = esp_ota_end(update_handle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "esp_ota_end failed (%s)", esp_err_to_name(err));
+        httpd_resp_send_500(req);
+        return ESP_FAIL;
+    }
+
+    err = esp_ota_set_boot_partition(update_partition);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "esp_ota_set_boot_partition failed (%s)", esp_err_to_name(err));
+        httpd_resp_send_500(req);
+        return ESP_FAIL;
+    }
+
+    ESP_LOGI(TAG, "OTA update successful! Rebooting...");
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, "{\"status\":\"ok\"}", -1);
+
     xTaskCreate(reboot_task, "reboot_task", 2048, NULL, 5, NULL);
     return ESP_OK;
 }
@@ -130,13 +217,13 @@ static esp_err_t api_config_get_handler(httpd_req_t *req) {
     cJSON_AddStringToObject(root, "mqtt_ip", cfg.mqtt_ip.c_str());
     cJSON_AddStringToObject(root, "mqtt_user", cfg.mqtt_username.c_str());
     cJSON_AddBoolToObject(root, "configured", g_config->is_configured());
-    
+
     // We don't send passwords back
-    
+
     const char *json_str = cJSON_PrintUnformatted(root);
     httpd_resp_set_type(req, "application/json");
     httpd_resp_send(req, json_str, strlen(json_str));
-    
+
     free((void *)json_str);
     cJSON_Delete(root);
     return ESP_OK;
@@ -300,6 +387,14 @@ esp_err_t start(WifiManager& wifi, ConfigManager& config) {
         .user_ctx  = NULL
     };
     httpd_register_uri_handler(server, &reboot_uri);
+
+    httpd_uri_t ota_update_uri = {
+        .uri       = "/api/update",
+        .method    = HTTP_POST,
+        .handler   = api_ota_update_post_handler,
+        .user_ctx  = NULL
+    };
+    httpd_register_uri_handler(server, &ota_update_uri);
 
     return ESP_OK;
 }
