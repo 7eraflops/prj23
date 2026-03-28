@@ -8,7 +8,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include "mdns_manager.hpp"
-#include <esp_ota_ops.h>
+#include "ota_manager.hpp"
 #include <algorithm>
 
 static const char *TAG = "WebServer";
@@ -121,20 +121,10 @@ static esp_err_t api_reboot_post_handler(httpd_req_t *req) {
 }
 
 static esp_err_t api_ota_update_post_handler(httpd_req_t *req) {
-    esp_ota_handle_t update_handle = 0;
-    const esp_partition_t *update_partition = esp_ota_get_next_update_partition(NULL);
+    ota_manager::OtaManager ota;
 
-    if (update_partition == NULL) {
-        ESP_LOGE(TAG, "Failed to get next update partition");
-        httpd_resp_send_500(req);
-        return ESP_FAIL;
-    }
-
-    ESP_LOGI(TAG, "Starting OTA update on partition: %s", update_partition->label);
-
-    esp_err_t err = esp_ota_begin(update_partition, OTA_SIZE_UNKNOWN, &update_handle);
+    esp_err_t err = ota.begin();
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "esp_ota_begin failed (%s)", esp_err_to_name(err));
         httpd_resp_send_500(req);
         return ESP_FAIL;
     }
@@ -143,7 +133,7 @@ static esp_err_t api_ota_update_post_handler(httpd_req_t *req) {
     char *buf = (char *)malloc(BUF_SIZE);
     if (!buf) {
         ESP_LOGE(TAG, "Failed to allocate memory for OTA buffer");
-        esp_ota_abort(update_handle);
+        ota.abort();
         httpd_resp_send_500(req);
         return ESP_FAIL;
     }
@@ -158,16 +148,14 @@ static esp_err_t api_ota_update_post_handler(httpd_req_t *req) {
                 continue;
             }
             ESP_LOGE(TAG, "OTA receive failed after %d bytes", received);
-            esp_ota_abort(update_handle);
+            ota.abort();
             free(buf);
             httpd_resp_send_500(req);
             return ESP_FAIL;
         }
 
-        err = esp_ota_write(update_handle, buf, recv_len);
+        err = ota.write(buf, recv_len);
         if (err != ESP_OK) {
-            ESP_LOGE(TAG, "esp_ota_write failed (%s)", esp_err_to_name(err));
-            esp_ota_abort(update_handle);
             free(buf);
             httpd_resp_send_500(req);
             return ESP_FAIL;
@@ -183,16 +171,8 @@ static esp_err_t api_ota_update_post_handler(httpd_req_t *req) {
 
     free(buf);
 
-    err = esp_ota_end(update_handle);
+    err = ota.end();
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "esp_ota_end failed (%s)", esp_err_to_name(err));
-        httpd_resp_send_500(req);
-        return ESP_FAIL;
-    }
-
-    err = esp_ota_set_boot_partition(update_partition);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "esp_ota_set_boot_partition failed (%s)", esp_err_to_name(err));
         httpd_resp_send_500(req);
         return ESP_FAIL;
     }
