@@ -1,9 +1,11 @@
 #include "board_manager.hpp"
+
+#include <driver/temperature_sensor.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+
 #include <esp_log.h>
 #include <esp_timer.h>
-#include <driver/temperature_sensor.h>
 
 static const char* TAG = "BoardManager";
 static temperature_sensor_handle_t temp_sensor = NULL;
@@ -18,7 +20,7 @@ struct InputContext {
 
 static void input_task(void* pvParameters) {
     InputContext* ctx = static_cast<InputContext*>(pvParameters);
-    
+
     gpio_config_t io_conf = {};
     io_conf.intr_type = GPIO_INTR_DISABLE;
     io_conf.mode = GPIO_MODE_INPUT;
@@ -78,7 +80,8 @@ float get_mcu_temperature() {
     return mcu_temp;
 }
 
-esp_err_t init_reset_button(gpio_num_t gpio_num, uint32_t hold_time_ms, std::function<void()> on_long_press) {
+esp_err_t init_reset_button(gpio_num_t gpio_num, uint32_t hold_time_ms,
+                            std::function<void()> on_long_press) {
     InputContext* ctx = new InputContext{gpio_num, hold_time_ms, on_long_press};
     BaseType_t ret = xTaskCreate(input_task, "board_input_task", 4096, ctx, 10, NULL);
     return (ret == pdPASS) ? ESP_OK : ESP_FAIL;

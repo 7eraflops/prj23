@@ -1,12 +1,14 @@
 #include "mdns_manager.hpp"
-#include <esp_log.h>
-#include <mdns.h>
-#include <esp_netif.h>
-#include <esp_wifi.h>
-#include <esp_event.h>
-#include <cstring>
+
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+
+#include <cstring>
+#include <esp_event.h>
+#include <esp_log.h>
+#include <esp_netif.h>
+#include <esp_wifi.h>
+#include <mdns.h>
 
 static const char* TAG = "MdnsManager";
 
@@ -19,19 +21,23 @@ esp_err_t MdnsManager::init(const std::string& hostname) {
 
     mdns_hostname_set(hostname.c_str());
     mdns_instance_name_set("Energy Meter Device");
-    
+
     // Set hostname for netifs as well
     esp_netif_t* sta_netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
-    if (sta_netif) esp_netif_set_hostname(sta_netif, hostname.c_str());
-    
+    if (sta_netif)
+        esp_netif_set_hostname(sta_netif, hostname.c_str());
+
     esp_netif_t* ap_netif = esp_netif_get_handle_from_ifkey("WIFI_AP_DEF");
-    if (ap_netif) esp_netif_set_hostname(ap_netif, hostname.c_str());
+    if (ap_netif)
+        esp_netif_set_hostname(ap_netif, hostname.c_str());
 
     refresh_services();
-    
+
     // Register event handlers
-    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_AP_START, &MdnsManager::event_handler, nullptr));
-    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &MdnsManager::event_handler, nullptr));
+    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_AP_START,
+                                               &MdnsManager::event_handler, nullptr));
+    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP,
+                                               &MdnsManager::event_handler, nullptr));
 
     return ESP_OK;
 }
@@ -41,7 +47,7 @@ void MdnsManager::refresh_services() {
     mdns_service_remove("_http", "_tcp");
     mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
     mdns_service_txt_item_set("_http", "_tcp", "version", "1.0");
-    
+
     ESP_LOGI(TAG, "mDNS refreshed");
 }
 
@@ -67,7 +73,7 @@ std::vector<MqttBroker> MdnsManager::discover_mqtt_brokers() {
         if (r->hostname) {
             broker.hostname = r->hostname;
         }
-        
+
         if (r->addr) {
             char buf[64];
             if (r->addr->addr.type == ESP_IPADDR_TYPE_V4) {
@@ -77,7 +83,7 @@ std::vector<MqttBroker> MdnsManager::discover_mqtt_brokers() {
             }
             broker.ip = buf;
         }
-        
+
         broker.port = r->port;
 
         // Extract TXT records
@@ -97,8 +103,8 @@ std::vector<MqttBroker> MdnsManager::discover_mqtt_brokers() {
     return brokers;
 }
 
-void MdnsManager::event_handler(void* arg, esp_event_base_t event_base,
-                                int32_t event_id, void* event_data) {
+void MdnsManager::event_handler(void* arg, esp_event_base_t event_base, int32_t event_id,
+                                void* event_data) {
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_START) {
         refresh_services();
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {

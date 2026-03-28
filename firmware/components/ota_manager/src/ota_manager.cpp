@@ -1,4 +1,5 @@
 #include "ota_manager.hpp"
+
 #include <esp_log.h>
 
 static const char* TAG = "OtaManager";

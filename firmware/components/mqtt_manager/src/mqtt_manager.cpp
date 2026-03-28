@@ -1,12 +1,12 @@
 #include "mqtt_manager.hpp"
-#include <esp_log.h>
+
 #include <cstring>
+#include <esp_log.h>
 
 static const char* TAG = "MQTT_MANAGER";
 
 MqttManager::MqttManager(const ConfigManager& config_manager)
-    : _config_manager(config_manager), _client(nullptr), _connected(false) {
-}
+    : _config_manager(config_manager), _client(nullptr), _connected(false) {}
 
 MqttManager::~MqttManager() {
     stop();
@@ -28,11 +28,11 @@ esp_err_t MqttManager::start() {
     if (uri.find("://") == std::string::npos) {
         uri = "mqtt://" + uri;
     }
-    
+
     // Using ESP-IDF v5.x compatible configuration structure
     esp_mqtt_client_config_t mqtt_cfg = {};
     mqtt_cfg.broker.address.uri = uri.c_str();
-    
+
     if (!config.mqtt_username.empty()) {
         mqtt_cfg.credentials.username = config.mqtt_username.c_str();
     }
@@ -48,7 +48,7 @@ esp_err_t MqttManager::start() {
     }
 
     esp_mqtt_client_register_event(_client, MQTT_EVENT_ANY, mqtt_event_handler, this);
-    
+
     esp_err_t err = esp_mqtt_client_start(_client);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to start MQTT client: %s", esp_err_to_name(err));
@@ -76,13 +76,15 @@ bool MqttManager::is_connected() const {
     return _connected;
 }
 
-int MqttManager::publish(const std::string& topic, const std::string& payload, int qos, bool retain) {
+int MqttManager::publish(const std::string& topic, const std::string& payload, int qos,
+                         bool retain) {
     if (!_connected || !_client) {
         ESP_LOGW(TAG, "Cannot publish, MQTT client not connected.");
         return -1;
     }
 
-    int msg_id = esp_mqtt_client_publish(_client, topic.c_str(), payload.c_str(), payload.length(), qos, retain);
+    int msg_id = esp_mqtt_client_publish(_client, topic.c_str(), payload.c_str(), payload.length(),
+                                         qos, retain);
     if (msg_id < 0) {
         ESP_LOGE(TAG, "Failed to publish message to topic: %s", topic.c_str());
     } else {
@@ -118,7 +120,8 @@ void MqttManager::on_message(MessageCallback cb) {
     _message_cb = std::move(cb);
 }
 
-void MqttManager::mqtt_event_handler(void* handler_args, esp_event_base_t base, int32_t event_id, void* event_data) {
+void MqttManager::mqtt_event_handler(void* handler_args, esp_event_base_t base, int32_t event_id,
+                                     void* event_data) {
     MqttManager* manager = static_cast<MqttManager*>(handler_args);
     esp_mqtt_event_handle_t event = static_cast<esp_mqtt_event_handle_t>(event_data);
     manager->handle_event(event);
@@ -126,55 +129,56 @@ void MqttManager::mqtt_event_handler(void* handler_args, esp_event_base_t base, 
 
 void MqttManager::handle_event(esp_mqtt_event_handle_t event) {
     switch (event->event_id) {
-        case MQTT_EVENT_CONNECTED:
-            ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
-            _connected = true;
-            if (_connect_cb) {
-                _connect_cb();
-            }
-            break;
-            
-        case MQTT_EVENT_DISCONNECTED:
-            ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
-            _connected = false;
-            if (_disconnect_cb) {
-                _disconnect_cb();
-            }
-            break;
-            
-        case MQTT_EVENT_SUBSCRIBED:
-            ESP_LOGD(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
-            break;
-            
-        case MQTT_EVENT_UNSUBSCRIBED:
-            ESP_LOGD(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
-            break;
-            
-        case MQTT_EVENT_PUBLISHED:
-            ESP_LOGD(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
-            break;
-            
-        case MQTT_EVENT_DATA: {
-            ESP_LOGD(TAG, "MQTT_EVENT_DATA");
-            if (_message_cb) {
-                std::string topic(event->topic, event->topic_len);
-                std::string payload(event->data, event->data_len);
-                _message_cb(topic, payload);
-            }
-            break;
+    case MQTT_EVENT_CONNECTED:
+        ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
+        _connected = true;
+        if (_connect_cb) {
+            _connect_cb();
         }
-            
-        case MQTT_EVENT_ERROR:
-            ESP_LOGE(TAG, "MQTT_EVENT_ERROR");
-            if (event->error_handle->error_type == MQTT_ERROR_TYPE_TCP_TRANSPORT) {
-                ESP_LOGE(TAG, "Reported from esp-tls: 0x%x", event->error_handle->esp_tls_last_esp_err);
-                ESP_LOGE(TAG, "Reported from tls stack: 0x%x", event->error_handle->esp_tls_stack_err);
-                ESP_LOGE(TAG, "Captured as transport's socket errno: %d", event->error_handle->esp_transport_sock_errno);
-            }
-            break;
-            
-        default:
-            ESP_LOGD(TAG, "Other event id:%d", event->event_id);
-            break;
+        break;
+
+    case MQTT_EVENT_DISCONNECTED:
+        ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
+        _connected = false;
+        if (_disconnect_cb) {
+            _disconnect_cb();
+        }
+        break;
+
+    case MQTT_EVENT_SUBSCRIBED:
+        ESP_LOGD(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
+        break;
+
+    case MQTT_EVENT_UNSUBSCRIBED:
+        ESP_LOGD(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
+        break;
+
+    case MQTT_EVENT_PUBLISHED:
+        ESP_LOGD(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
+        break;
+
+    case MQTT_EVENT_DATA: {
+        ESP_LOGD(TAG, "MQTT_EVENT_DATA");
+        if (_message_cb) {
+            std::string topic(event->topic, event->topic_len);
+            std::string payload(event->data, event->data_len);
+            _message_cb(topic, payload);
+        }
+        break;
+    }
+
+    case MQTT_EVENT_ERROR:
+        ESP_LOGE(TAG, "MQTT_EVENT_ERROR");
+        if (event->error_handle->error_type == MQTT_ERROR_TYPE_TCP_TRANSPORT) {
+            ESP_LOGE(TAG, "Reported from esp-tls: 0x%x", event->error_handle->esp_tls_last_esp_err);
+            ESP_LOGE(TAG, "Reported from tls stack: 0x%x", event->error_handle->esp_tls_stack_err);
+            ESP_LOGE(TAG, "Captured as transport's socket errno: %d",
+                     event->error_handle->esp_transport_sock_errno);
+        }
+        break;
+
+    default:
+        ESP_LOGD(TAG, "Other event id:%d", event->event_id);
+        break;
     }
 }

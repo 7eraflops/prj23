@@ -1,8 +1,8 @@
 #pragma once
 
+#include <cstddef>
 #include <esp_err.h>
 #include <esp_ota_ops.h>
-#include <cstddef>
 
 namespace ota_manager {
 
@@ -16,16 +16,16 @@ public:
 
     /**
      * @brief Prepares the device for a new firmware update.
-     * 
+     *
      * Finds the next available OTA partition and begins the update process.
-     * 
+     *
      * @return esp_err_t ESP_OK on success, or an error code on failure.
      */
     esp_err_t begin();
 
     /**
      * @brief Writes a chunk of firmware data to the flash memory.
-     * 
+     *
      * @param data Pointer to the binary data chunk.
      * @param length Size of the data chunk in bytes.
      * @return esp_err_t ESP_OK on success, or an error code on failure.
@@ -34,9 +34,9 @@ public:
 
     /**
      * @brief Finalizes the firmware update.
-     * 
+     *
      * Validates the written data and sets the new partition as the boot target.
-     * 
+     *
      * @return esp_err_t ESP_OK on success, or an error code on failure.
      */
     esp_err_t end();

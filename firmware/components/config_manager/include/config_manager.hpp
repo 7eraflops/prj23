@@ -1,7 +1,7 @@
 #pragma once
 
-#include <string>
 #include <esp_err.h>
+#include <string>
 
 /**
  * @brief Holds all user-configurable parameters for the application.
@@ -49,7 +49,7 @@ public:
     const AppConfig& get_config() const;
 
     /**
-     * @brief Updates the in-memory configuration. 
+     * @brief Updates the in-memory configuration.
      * @note You must call save() after this to persist the changes to flash.
      */
     void set_config(const AppConfig& config);

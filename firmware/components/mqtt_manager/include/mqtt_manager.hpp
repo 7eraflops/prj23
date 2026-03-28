@@ -1,16 +1,18 @@
 #pragma once
 
-#include <string>
-#include <functional>
-#include <esp_err.h>
-#include "mqtt_client.h"
 #include "config_manager.hpp"
+#include "mqtt_client.h"
+
+#include <esp_err.h>
+#include <functional>
+#include <string>
 
 class MqttManager {
 public:
     using ConnectCallback = std::function<void()>;
     using DisconnectCallback = std::function<void()>;
-    using MessageCallback = std::function<void(const std::string& topic, const std::string& payload)>;
+    using MessageCallback =
+        std::function<void(const std::string& topic, const std::string& payload)>;
 
     /**
      * @brief Construct a new Mqtt Manager object
@@ -47,18 +49,19 @@ public:
 
     /**
      * @brief Publish a message to a topic
-     * 
+     *
      * @param topic The MQTT topic
      * @param payload The message payload
      * @param qos Quality of Service (0, 1, or 2)
      * @param retain Retain flag
      * @return int message_id of the publish message, or -1 on failure
      */
-    int publish(const std::string& topic, const std::string& payload, int qos = 0, bool retain = false);
+    int publish(const std::string& topic, const std::string& payload, int qos = 0,
+                bool retain = false);
 
     /**
      * @brief Subscribe to an MQTT topic
-     * 
+     *
      * @param topic The MQTT topic to subscribe to
      * @param qos Quality of Service (0, 1, or 2)
      * @return int message_id of the subscribe message, or -1 on failure
@@ -89,6 +92,7 @@ private:
     DisconnectCallback _disconnect_cb;
     MessageCallback _message_cb;
 
-    static void mqtt_event_handler(void* handler_args, esp_event_base_t base, int32_t event_id, void* event_data);
+    static void mqtt_event_handler(void* handler_args, esp_event_base_t base, int32_t event_id,
+                                   void* event_data);
     void handle_event(esp_mqtt_event_handle_t event);
 };
