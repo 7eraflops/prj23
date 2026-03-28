@@ -23,7 +23,7 @@ public:
 
     /**
      * @brief Initialize the sensor.
-     * 
+     *
      * @return true if successful, false otherwise.
      */
     virtual bool init() = 0;
@@ -35,7 +35,7 @@ public:
 
     /**
      * @brief Get the latest reading for a specific channel.
-     * 
+     *
      * @param channel The channel index (e.g., 0-11 for a 12-channel meter).
      * @return EnergyData containing the latest measurements.
      */

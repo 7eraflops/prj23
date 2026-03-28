@@ -1,6 +1,7 @@
 #include "config_manager.hpp"
-#include <nvs.h>
+
 #include <esp_log.h>
+#include <nvs.h>
 
 static const char* TAG = "ConfigManager";
 static const char* NVS_NAMESPACE = "app_config";
@@ -26,7 +27,7 @@ esp_err_t ConfigManager::load_string(const char* key, std::string& value) {
         }
         delete[] buffer;
     }
-    
+
     nvs_close(handle);
     return err;
 }
@@ -42,41 +43,45 @@ esp_err_t ConfigManager::save_string(const char* key, const std::string& value) 
     if (err == ESP_OK) {
         err = nvs_commit(handle);
     }
-    
+
     nvs_close(handle);
     return err;
 }
 
 esp_err_t ConfigManager::load() {
     ESP_LOGI(TAG, "Loading configuration from NVS...");
-    
-    // We don't check for errors here because it's normal for some keys 
+
+    // We don't check for errors here because it's normal for some keys
     // to not exist yet (e.g., first boot). The strings will just remain empty.
     load_string("wifi_ssid", _config.wifi_ssid);
     load_string("wifi_pass", _config.wifi_password);
     load_string("mqtt_ip", _config.mqtt_ip);
     load_string("mqtt_user", _config.mqtt_username);
     load_string("mqtt_pass", _config.mqtt_password);
-    
+
     return ESP_OK;
 }
 
 esp_err_t ConfigManager::save() {
     ESP_LOGI(TAG, "Saving configuration to NVS...");
-    
+
     esp_err_t err;
     err = save_string("wifi_ssid", _config.wifi_ssid);
-    if (err != ESP_OK) return err;
-    
+    if (err != ESP_OK)
+        return err;
+
     err = save_string("wifi_pass", _config.wifi_password);
-    if (err != ESP_OK) return err;
-    
+    if (err != ESP_OK)
+        return err;
+
     err = save_string("mqtt_ip", _config.mqtt_ip);
-    if (err != ESP_OK) return err;
-    
+    if (err != ESP_OK)
+        return err;
+
     err = save_string("mqtt_user", _config.mqtt_username);
-    if (err != ESP_OK) return err;
-    
+    if (err != ESP_OK)
+        return err;
+
     err = save_string("mqtt_pass", _config.mqtt_password);
     return err;
 }
@@ -94,10 +99,10 @@ esp_err_t ConfigManager::clear() {
         err = nvs_commit(handle);
     }
     nvs_close(handle);
-    
+
     // Clear in-memory config as well
     _config = AppConfig{};
-    
+
     return err;
 }
 

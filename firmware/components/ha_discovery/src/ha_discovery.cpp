@@ -1,13 +1,13 @@
 #include "ha_discovery.hpp"
-#include <esp_log.h>
+
 #include <cstdio>
+#include <esp_log.h>
 #include <sstream>
 
 static const char* TAG = "HA_DISCOVERY";
 
 HaDiscovery::HaDiscovery(MqttManager& mqtt_manager, const std::string& device_id)
-    : _mqtt_manager(mqtt_manager), _status_topic("energy_meter/heartbeat"), _device_id(device_id) {
-}
+    : _mqtt_manager(mqtt_manager), _status_topic("energy_meter/heartbeat"), _device_id(device_id) {}
 
 void HaDiscovery::publish_discovery_messages(int num_channels) {
     if (!_mqtt_manager.is_connected()) {
@@ -21,14 +21,18 @@ void HaDiscovery::publish_discovery_messages(int num_channels) {
         publish_sensor_discovery(i, "voltage", "Voltage", "V", "voltage", "measurement");
         publish_sensor_discovery(i, "current", "Current", "A", "current", "measurement");
         publish_sensor_discovery(i, "active_power", "Power", "W", "power", "measurement");
-        publish_sensor_discovery(i, "apparent_power", "Apparent Power", "VA", "apparent_power", "measurement");
-        publish_sensor_discovery(i, "reactive_power", "Reactive Power", "var", "reactive_power", "measurement");
-        publish_sensor_discovery(i, "power_factor", "Power Factor", "", "power_factor", "measurement");
+        publish_sensor_discovery(i, "apparent_power", "Apparent Power", "VA", "apparent_power",
+                                 "measurement");
+        publish_sensor_discovery(i, "reactive_power", "Reactive Power", "var", "reactive_power",
+                                 "measurement");
+        publish_sensor_discovery(i, "power_factor", "Power Factor", "", "power_factor",
+                                 "measurement");
         publish_sensor_discovery(i, "energy", "Energy", "kWh", "energy", "total_increasing");
         publish_sensor_discovery(i, "frequency", "Frequency", "Hz", "frequency", "measurement");
     }
 
-    publish_diagnostic_discovery("wifi_rssi", "Wi-Fi Signal", "dBm", "signal_strength", "diagnostic");
+    publish_diagnostic_discovery("wifi_rssi", "Wi-Fi Signal", "dBm", "signal_strength",
+                                 "diagnostic");
     publish_diagnostic_discovery("free_heap", "Free Memory", "B", "data_size", "diagnostic");
     publish_diagnostic_discovery("uptime", "Uptime", "s", "duration", "diagnostic");
     publish_diagnostic_discovery("mcu_temp", "MCU Temperature", "°C", "temperature", "diagnostic");
@@ -36,14 +40,13 @@ void HaDiscovery::publish_discovery_messages(int num_channels) {
     ESP_LOGI(TAG, "Finished publishing discovery messages.");
 }
 
-void HaDiscovery::publish_sensor_discovery(int channel, 
-                                           const std::string& sensor_type, 
-                                           const std::string& name,
-                                           const std::string& unit, 
-                                           const std::string& device_class, 
+void HaDiscovery::publish_sensor_discovery(int channel, const std::string& sensor_type,
+                                           const std::string& name, const std::string& unit,
+                                           const std::string& device_class,
                                            const std::string& state_class) {
     char topic[128];
-    snprintf(topic, sizeof(topic), "homeassistant/sensor/%s_ch%d_%s/config", _device_id.c_str(), channel, sensor_type.c_str());
+    snprintf(topic, sizeof(topic), "homeassistant/sensor/%s_ch%d_%s/config", _device_id.c_str(),
+             channel, sensor_type.c_str());
 
     std::ostringstream payload;
     payload << "{";
@@ -63,7 +66,7 @@ void HaDiscovery::publish_sensor_discovery(int channel,
     payload << "\"payload_available\": \"alive\",";
     payload << "\"payload_not_available\": \"dead\",";
     payload << "\"value_template\": \"{{ value_json." << sensor_type << " }}\",";
-    
+
     // Device info (Sub-device per channel)
     payload << "\"device\": {";
     payload << "\"identifiers\": [\"" << _device_id << "_ch" << channel << "\"],";
@@ -79,12 +82,12 @@ void HaDiscovery::publish_sensor_discovery(int channel,
 }
 
 void HaDiscovery::publish_diagnostic_discovery(const std::string& sensor_type,
-                                               const std::string& name,
-                                               const std::string& unit,
+                                               const std::string& name, const std::string& unit,
                                                const std::string& device_class,
                                                const std::string& entity_category) {
     char topic[128];
-    snprintf(topic, sizeof(topic), "homeassistant/sensor/%s_%s/config", _device_id.c_str(), sensor_type.c_str());
+    snprintf(topic, sizeof(topic), "homeassistant/sensor/%s_%s/config", _device_id.c_str(),
+             sensor_type.c_str());
 
     std::ostringstream payload;
     payload << "{";

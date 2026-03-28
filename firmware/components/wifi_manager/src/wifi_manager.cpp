@@ -1,14 +1,16 @@
 #include "wifi_manager.hpp"
+
+#include <freertos/FreeRTOS.h>
+#include <freertos/event_groups.h>
+#include <freertos/task.h>
+
+#include <cstring>
+#include <esp_event.h>
 #include <esp_log.h>
 #include <esp_mac.h>
-#include <nvs_flash.h>
-#include <esp_wifi.h>
-#include <esp_event.h>
 #include <esp_netif.h>
-#include <cstring>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <freertos/event_groups.h>
+#include <esp_wifi.h>
+#include <nvs_flash.h>
 
 static const char* TAG = "WifiManager";
 
@@ -46,8 +48,10 @@ esp_err_t WifiManager::init() {
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
     // Register Event Handlers
-    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &WifiManager::event_handler, this));
-    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &WifiManager::event_handler, this));
+    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID,
+                                               &WifiManager::event_handler, this));
+    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP,
+                                               &WifiManager::event_handler, this));
 
     return ESP_OK;
 }
@@ -57,8 +61,9 @@ esp_err_t WifiManager::connect(const std::string& ssid, const std::string& passw
 
     wifi_config_t wifi_config = {};
     strncpy((char*)wifi_config.sta.ssid, ssid.c_str(), sizeof(wifi_config.sta.ssid) - 1);
-    strncpy((char*)wifi_config.sta.password, password.c_str(), sizeof(wifi_config.sta.password) - 1);
-    
+    strncpy((char*)wifi_config.sta.password, password.c_str(),
+            sizeof(wifi_config.sta.password) - 1);
+
     if (password.empty()) {
         wifi_config.sta.threshold.authmode = WIFI_AUTH_OPEN;
     } else {
@@ -117,7 +122,7 @@ std::vector<WifiNetwork> WifiManager::scan_networks() {
 
     uint16_t ap_count = 0;
     esp_wifi_scan_get_ap_num(&ap_count);
-    
+
     if (ap_count == 0) {
         ESP_LOGI(TAG, "No Wi-Fi networks found");
         return networks;
@@ -133,7 +138,7 @@ std::vector<WifiNetwork> WifiManager::scan_networks() {
         net.ssid = std::string((char*)ap_records[i].ssid);
         net.rssi = ap_records[i].rssi;
         net.requires_password = (ap_records[i].authmode != WIFI_AUTH_OPEN);
-        
+
         // Filter out empty SSIDs
         if (!net.ssid.empty()) {
             networks.push_back(net);
@@ -142,7 +147,7 @@ std::vector<WifiNetwork> WifiManager::scan_networks() {
 
     delete[] ap_records;
     ESP_LOGI(TAG, "Scan complete, found %d networks", networks.size());
-    
+
     return networks;
 }
 
@@ -171,8 +176,8 @@ std::string WifiManager::get_sta_ip() const {
     return "0.0.0.0";
 }
 
-void WifiManager::event_handler(void* arg, esp_event_base_t event_base,
-                                int32_t event_id, void* event_data) {
+void WifiManager::event_handler(void* arg, esp_event_base_t event_base, int32_t event_id,
+                                void* event_data) {
     WifiManager* self = static_cast<WifiManager*>(arg);
     if (event_base == WIFI_EVENT) {
         self->on_wifi_event(event_id, event_data);
@@ -190,7 +195,7 @@ void WifiManager::on_wifi_event(int32_t event_id, void* event_data) {
         ESP_LOGW(TAG, "Disconnected from WiFi, retrying...");
         _is_connected = false;
         xEventGroupClearBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
-        
+
         // Auto-reconnect if we are in STA mode
         wifi_mode_t mode;
         esp_wifi_get_mode(&mode);
@@ -198,17 +203,17 @@ void WifiManager::on_wifi_event(int32_t event_id, void* event_data) {
             esp_wifi_connect();
         }
     } else if (event_id == WIFI_EVENT_AP_STACONNECTED) {
-        wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
+        wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*)event_data;
         ESP_LOGI(TAG, "Device connected to our AP: " MACSTR, MAC2STR(event->mac));
     } else if (event_id == WIFI_EVENT_AP_STADISCONNECTED) {
-        wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
+        wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*)event_data;
         ESP_LOGI(TAG, "Device disconnected from our AP: " MACSTR, MAC2STR(event->mac));
     }
 }
 
 void WifiManager::on_ip_event(int32_t event_id, void* event_data) {
     if (event_id == IP_EVENT_STA_GOT_IP) {
-        ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
+        ip_event_got_ip_t* event = (ip_event_got_ip_t*)event_data;
         ESP_LOGI(TAG, "Got IP: " IPSTR, IP2STR(&event->ip_info.ip));
         _is_connected = true;
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);

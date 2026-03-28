@@ -1,10 +1,10 @@
 #pragma once
 
-#include <string>
-#include <vector>
 #include <esp_err.h>
 #include <esp_event.h>
 #include <esp_wifi.h>
+#include <string>
+#include <vector>
 
 // Represents a discovered Wi-Fi network during a scan
 struct WifiNetwork {
@@ -69,7 +69,9 @@ public:
     /**
      * @brief Returns true if the device is currently connected to Wi-Fi.
      */
-    bool is_connected() const { return _is_connected; }
+    bool is_connected() const {
+        return _is_connected;
+    }
 
     /**
      * @brief Returns the current Station IP address as a string.
@@ -78,8 +80,8 @@ public:
 
 private:
     // Core ESP-IDF event loop dispatcher
-    static void event_handler(void* arg, esp_event_base_t event_base,
-                              int32_t event_id, void* event_data);
+    static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id,
+                              void* event_data);
 
     // Specific event handlers
     void on_wifi_event(int32_t event_id, void* event_data);

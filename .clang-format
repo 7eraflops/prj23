@@ -1,0 +1,37 @@
+---
+# Base style to inherit defaults from
+Language: Cpp
+BasedOnStyle: LLVM
+
+# --- Indentation & Spacing ---
+IndentWidth: 4                # Standard 4-space indent
+TabWidth: 4                   # Represent tabs as 4 spaces
+UseTab: Never                 # Always use spaces (standard for ESP-IDF)
+AccessModifierOffset: -4      # Keeps 'public:' aligned with the class keyword
+NamespaceIndentation: None    # Don't indent code inside 'namespace {...}' (saves horizontal space)
+
+# --- Alignment ---
+PointerAlignment: Left        # 'char* ptr' instead of 'char *ptr' (matches your TAGs)
+ColumnLimit: 100              # Wraps lines longer than 100 chars (good for modern wide screens)
+
+# --- Braces & Blocks ---
+BreakBeforeBraces: Attach     # Standard 'if (...) {' style. Keeps code compact.
+AllowShortFunctionsOnASingleLine: Empty # Only allow '{}' on one line.
+MaxEmptyLinesToKeep: 1        # Collapses 3+ empty lines into 1. Keeps files concise.
+FixNamespaceComments: true    # Automatically adds '// namespace ...' to the closing brace
+
+# --- Include Management ---
+SortIncludes: true            # Alphabetically sorts your headers
+IncludeBlocks: Regroup       # Groups headers into the categories defined below
+IncludeCategories:
+  - Regex: '^"(.*)"'          # Category 1: Local project headers
+    Priority: 1
+  - Regex: '^<(esp|driver|freertos|nvs|mdns|mqtt|http).*/' # Category 2: ESP-IDF/Drivers
+    Priority: 2
+  - Regex: '^<.*>'            # Category 3: Standard C++ (string, vector)
+    Priority: 3
+
+# --- Modern C++ ---
+Standard: c++20               # Ensures formatting is aware of C++20 syntax
+Cpp11BracedListStyle: true    # 'vector<int> x{1, 2, 3}' without spaces inside braces
+...
