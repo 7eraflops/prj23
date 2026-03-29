@@ -2,7 +2,7 @@ idf_component_register(
     SRCS "src/web_server.cpp"
     INCLUDE_DIRS "include"
     REQUIRES esp_http_server lwip esp_wifi esp_netif wifi_manager
-             config_manager json mdns_manager ota_manager
+             config_manager cjson mdns_manager ota_manager
     EMBED_TXTFILES "index.html"
 )
 

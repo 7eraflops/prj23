@@ -32,6 +32,6 @@ IncludeCategories:
     Priority: 3
 
 # --- Modern C++ ---
-Standard: c++20               # Ensures formatting is aware of C++20 syntax
+Standard: c++26               # Ensures formatting is aware of the newest C++ syntax
 Cpp11BracedListStyle: true    # 'vector<int> x{1, 2, 3}' without spaces inside braces
 ...
