@@ -2,6 +2,8 @@
 
 #include <cstdio>
 #include <esp_log.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include <sstream>
 
 static const char* TAG = "HA_DISCOVERY";
@@ -19,22 +21,33 @@ void HaDiscovery::publish_discovery_messages(int num_channels) {
 
     for (int i = 0; i < num_channels; ++i) {
         publish_sensor_discovery(i, "voltage", "Voltage", "V", "voltage", "measurement");
+        vTaskDelay(pdMS_TO_TICKS(10));
         publish_sensor_discovery(i, "current", "Current", "A", "current", "measurement");
+        vTaskDelay(pdMS_TO_TICKS(10));
         publish_sensor_discovery(i, "active_power", "Power", "W", "power", "measurement");
+        vTaskDelay(pdMS_TO_TICKS(10));
         publish_sensor_discovery(i, "apparent_power", "Apparent Power", "VA", "apparent_power",
                                  "measurement");
+        vTaskDelay(pdMS_TO_TICKS(10));
         publish_sensor_discovery(i, "reactive_power", "Reactive Power", "var", "reactive_power",
                                  "measurement");
+        vTaskDelay(pdMS_TO_TICKS(10));
         publish_sensor_discovery(i, "power_factor", "Power Factor", "", "power_factor",
                                  "measurement");
+        vTaskDelay(pdMS_TO_TICKS(10));
         publish_sensor_discovery(i, "energy", "Energy", "kWh", "energy", "total_increasing");
+        vTaskDelay(pdMS_TO_TICKS(10));
         publish_sensor_discovery(i, "frequency", "Frequency", "Hz", "frequency", "measurement");
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 
     publish_diagnostic_discovery("wifi_rssi", "Wi-Fi Signal", "dBm", "signal_strength",
                                  "diagnostic");
+    vTaskDelay(pdMS_TO_TICKS(10));
     publish_diagnostic_discovery("free_heap", "Free Memory", "B", "data_size", "diagnostic");
+    vTaskDelay(pdMS_TO_TICKS(10));
     publish_diagnostic_discovery("uptime", "Uptime", "s", "duration", "diagnostic");
+    vTaskDelay(pdMS_TO_TICKS(10));
     publish_diagnostic_discovery("mcu_temp", "MCU Temperature", "°C", "temperature", "diagnostic");
 
     ESP_LOGI(TAG, "Finished publishing discovery messages.");

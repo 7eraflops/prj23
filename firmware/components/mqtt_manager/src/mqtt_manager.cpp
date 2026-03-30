@@ -5,6 +5,9 @@
 
 static const char* TAG = "MQTT_MANAGER";
 
+static constexpr const char* LWT_TOPIC = "energy_meter/heartbeat";
+static constexpr const char* LWT_PAYLOAD = "{\"status\":\"dead\"}";
+
 MqttManager::MqttManager(const ConfigManager& config_manager)
     : _config_manager(config_manager), _client(nullptr), _connected(false) {}
 
@@ -39,6 +42,12 @@ esp_err_t MqttManager::start() {
     if (!config.mqtt_password.empty()) {
         mqtt_cfg.credentials.authentication.password = config.mqtt_password.c_str();
     }
+
+    mqtt_cfg.session.last_will.topic = LWT_TOPIC;
+    mqtt_cfg.session.last_will.msg = LWT_PAYLOAD;
+    mqtt_cfg.session.last_will.msg_len = strlen(LWT_PAYLOAD);
+    mqtt_cfg.session.last_will.qos = 1;
+    mqtt_cfg.session.last_will.retain = true;
 
     ESP_LOGI(TAG, "Initializing MQTT client for URI: %s", uri.c_str());
     _client = esp_mqtt_client_init(&mqtt_cfg);
