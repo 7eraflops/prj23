@@ -1,6 +1,7 @@
 #pragma once
 
 #include <esp_err.h>
+#include <mutex>
 #include <string>
 
 /**
@@ -56,6 +57,7 @@ public:
 
 private:
     AppConfig _config;
+    mutable std::mutex _mtx;
 
     // Helper methods for NVS string operations
     esp_err_t load_string(const char* key, std::string& value);

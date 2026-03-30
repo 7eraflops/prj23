@@ -5,6 +5,7 @@
 
 #include <esp_err.h>
 #include <functional>
+#include <mutex>
 #include <string>
 
 class MqttManager {
@@ -87,6 +88,7 @@ private:
     const ConfigManager& _config_manager;
     esp_mqtt_client_handle_t _client;
     bool _connected;
+    mutable std::mutex _mtx;
 
     ConnectCallback _connect_cb;
     DisconnectCallback _disconnect_cb;

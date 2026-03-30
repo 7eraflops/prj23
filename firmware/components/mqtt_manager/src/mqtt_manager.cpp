@@ -68,25 +68,34 @@ esp_err_t MqttManager::start() {
 }
 
 esp_err_t MqttManager::stop() {
-    if (_client == nullptr) {
-        return ESP_OK;
+    {
+        std::lock_guard<std::mutex> lock(_mtx);
+        if (_client == nullptr) {
+            return ESP_OK;
+        }
     }
 
     ESP_LOGI(TAG, "Stopping MQTT client.");
     esp_mqtt_client_stop(_client);
     esp_mqtt_client_destroy(_client);
-    _client = nullptr;
-    _connected = false;
+
+    {
+        std::lock_guard<std::mutex> lock(_mtx);
+        _client = nullptr;
+        _connected = false;
+    }
 
     return ESP_OK;
 }
 
 bool MqttManager::is_connected() const {
+    std::lock_guard<std::mutex> lock(_mtx);
     return _connected;
 }
 
 int MqttManager::publish(const std::string& topic, const std::string& payload, int qos,
                          bool retain) {
+    std::lock_guard<std::mutex> lock(_mtx);
     if (!_connected || !_client) {
         ESP_LOGW(TAG, "Cannot publish, MQTT client not connected.");
         return -1;
@@ -103,6 +112,7 @@ int MqttManager::publish(const std::string& topic, const std::string& payload, i
 }
 
 int MqttManager::subscribe(const std::string& topic, int qos) {
+    std::lock_guard<std::mutex> lock(_mtx);
     if (!_connected || !_client) {
         ESP_LOGW(TAG, "Cannot subscribe, MQTT client not connected.");
         return -1;
@@ -137,6 +147,7 @@ void MqttManager::mqtt_event_handler(void* handler_args, esp_event_base_t base, 
 }
 
 void MqttManager::handle_event(esp_mqtt_event_handle_t event) {
+    std::lock_guard<std::mutex> lock(_mtx);
     switch (event->event_id) {
     case MQTT_EVENT_CONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
