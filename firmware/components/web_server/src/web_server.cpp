@@ -257,26 +257,51 @@ static esp_err_t api_save_post_handler(httpd_req_t* req) {
 
     cJSON* ssid = cJSON_GetObjectItem(root, "ssid");
     if (cJSON_IsString(ssid) && (ssid->valuestring != NULL)) {
+        if (strlen(ssid->valuestring) > 32) {
+            cJSON_Delete(root);
+            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "SSID too long (max 32 chars)");
+            return ESP_FAIL;
+        }
         cfg.wifi_ssid = ssid->valuestring;
     }
 
     cJSON* password = cJSON_GetObjectItem(root, "password");
     if (cJSON_IsString(password) && (password->valuestring != NULL)) {
+        if (strlen(password->valuestring) > 64) {
+            cJSON_Delete(root);
+            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Password too long (max 64 chars)");
+            return ESP_FAIL;
+        }
         cfg.wifi_password = password->valuestring;
     }
 
     cJSON* mqtt_uri = cJSON_GetObjectItem(root, "mqtt_uri");
     if (cJSON_IsString(mqtt_uri) && (mqtt_uri->valuestring != NULL)) {
+        if (strlen(mqtt_uri->valuestring) > 256) {
+            cJSON_Delete(root);
+            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "MQTT URI too long (max 256 chars)");
+            return ESP_FAIL;
+        }
         cfg.mqtt_ip = mqtt_uri->valuestring;
     }
 
     cJSON* mqtt_user = cJSON_GetObjectItem(root, "mqtt_user");
     if (cJSON_IsString(mqtt_user) && (mqtt_user->valuestring != NULL)) {
+        if (strlen(mqtt_user->valuestring) > 64) {
+            cJSON_Delete(root);
+            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "MQTT user too long (max 64 chars)");
+            return ESP_FAIL;
+        }
         cfg.mqtt_username = mqtt_user->valuestring;
     }
 
     cJSON* mqtt_pass = cJSON_GetObjectItem(root, "mqtt_pass");
     if (cJSON_IsString(mqtt_pass) && (mqtt_pass->valuestring != NULL)) {
+        if (strlen(mqtt_pass->valuestring) > 64) {
+            cJSON_Delete(root);
+            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "MQTT password too long (max 64 chars)");
+            return ESP_FAIL;
+        }
         cfg.mqtt_password = mqtt_pass->valuestring;
     }
 
