@@ -49,6 +49,7 @@ esp_err_t ConfigManager::save_string(const char* key, const std::string& value) 
 }
 
 esp_err_t ConfigManager::load() {
+    std::lock_guard<std::mutex> lock(_mtx);
     ESP_LOGI(TAG, "Loading configuration from NVS...");
 
     // We don't check for errors here because it's normal for some keys
@@ -63,6 +64,7 @@ esp_err_t ConfigManager::load() {
 }
 
 esp_err_t ConfigManager::save() {
+    std::lock_guard<std::mutex> lock(_mtx);
     ESP_LOGI(TAG, "Saving configuration to NVS...");
 
     esp_err_t err;
@@ -87,6 +89,7 @@ esp_err_t ConfigManager::save() {
 }
 
 esp_err_t ConfigManager::clear() {
+    std::lock_guard<std::mutex> lock(_mtx);
     ESP_LOGI(TAG, "Clearing configuration from NVS...");
     nvs_handle_t handle;
     esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &handle);
@@ -107,14 +110,17 @@ esp_err_t ConfigManager::clear() {
 }
 
 bool ConfigManager::is_configured() const {
+    std::lock_guard<std::mutex> lock(_mtx);
     // We consider the device configured if it at least has a Wi-Fi SSID
     return !_config.wifi_ssid.empty();
 }
 
 const AppConfig& ConfigManager::get_config() const {
+    std::lock_guard<std::mutex> lock(_mtx);
     return _config;
 }
 
 void ConfigManager::set_config(const AppConfig& config) {
+    std::lock_guard<std::mutex> lock(_mtx);
     _config = config;
 }
