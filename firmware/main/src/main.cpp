@@ -35,11 +35,13 @@ extern "C" void app_main() {
 
     // Initialize reset button (GPIO 0 - BOOT button on DevKit)
     // Holding for 5 seconds will clear credentials and reboot
-    board_manager::init_reset_button(GPIO_NUM_0, 5000, []() {
+    board_manager::init_reset_button(GPIO_NUM_0, 5000, [&]() {
         ESP_LOGW(TAG, "Reset button held. Clearing configuration and rebooting...");
+        mqtt.stop();
+        wifi.set_mode(WIFI_MODE_NULL);
         config_mgr.clear();
         wifi.clear_settings();
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(200));
         esp_restart();
     });
 
