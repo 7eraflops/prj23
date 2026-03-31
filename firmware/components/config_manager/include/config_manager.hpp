@@ -4,6 +4,15 @@
 #include <mutex>
 #include <string>
 
+static constexpr uint16_t NUM_CHANNELS = 12;
+
+enum class ChannelPhase : uint8_t {
+    NONE = 0,
+    PHASE_A = 1,
+    PHASE_B = 2,
+    PHASE_C = 3
+};
+
 /**
  * @brief Holds all user-configurable parameters for the application.
  */
@@ -13,6 +22,21 @@ struct AppConfig {
     std::string mqtt_ip;
     std::string mqtt_username;
     std::string mqtt_password;
+
+    uint16_t channel_active_mask = 0x0FFF;
+    ChannelPhase channel_phases[NUM_CHANNELS];
+
+    AppConfig() {
+        for (int i = 0; i < NUM_CHANNELS; ++i) {
+            if (i < 4) {
+                channel_phases[i] = ChannelPhase::PHASE_A;
+            } else if (i < 8) {
+                channel_phases[i] = ChannelPhase::PHASE_B;
+            } else {
+                channel_phases[i] = ChannelPhase::PHASE_C;
+            }
+        }
+    }
 };
 
 class ConfigManager {
@@ -55,11 +79,27 @@ public:
      */
     void set_config(const AppConfig& config);
 
+    bool is_channel_active(int channel) const;
+    void set_channel_active(int channel, bool active);
+
+    ChannelPhase get_channel_phase(int channel) const;
+    void set_channel_phase(int channel, ChannelPhase phase);
+
+    void save_channel_settings();
+
 private:
     AppConfig _config;
     mutable std::mutex _mtx;
 
-    // Helper methods for NVS string operations
+    // Helper methods for NVS operations
     esp_err_t load_string(const char* key, std::string& value);
     esp_err_t save_string(const char* key, const std::string& value);
+
+    esp_err_t load_u16(const char* key, uint16_t& value);
+    esp_err_t save_u16(const char* key, uint16_t value);
+
+    esp_err_t load_u8(const char* key, uint8_t& value);
+    esp_err_t save_u8(const char* key, uint8_t value);
+
+    void load_channel_settings();
 };

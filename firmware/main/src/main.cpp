@@ -1,4 +1,5 @@
 #include "board_manager.hpp"
+#include "command_handler.hpp"
 #include "config_manager.hpp"
 #include "ha_discovery.hpp"
 #include "mdns_manager.hpp"
@@ -30,6 +31,7 @@ extern "C" void app_main() {
     snprintf(device_id, sizeof(device_id), "energymeter_%02x%02x%02x", base_mac[3], base_mac[4],
              base_mac[5]);
     static HaDiscovery ha_discovery(mqtt, std::string(device_id));
+    static CommandHandler cmd_handler(mqtt, config_mgr, wifi, std::string(device_id));
 
     board_manager::init_temperature_sensor();
 
@@ -77,8 +79,19 @@ extern "C" void app_main() {
         wifi.wait_for_connection();
         ESP_LOGI(TAG, "WiFi Connected!");
 
-        mqtt.on_connect([]() {
+        mqtt.on_message([&](const std::string& topic, const std::string& payload) {
+            cmd_handler.on_message(topic, payload);
+        });
+
+        mqtt.on_connect([&]() {
             ESP_LOGI(TAG, "MQTT Connected! Publishing HA Auto-Discovery...");
+            ha_discovery.publish_discovery_messages(12);
+            cmd_handler.start();
+            cmd_handler.publish_status();
+            cmd_handler.republish_all_states();
+        });
+
+        cmd_handler.on_republish_discovery([&]() {
             ha_discovery.publish_discovery_messages(12);
         });
 

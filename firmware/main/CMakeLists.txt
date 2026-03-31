@@ -10,4 +10,5 @@ idf_component_register(
         mqtt_manager
         ha_discovery
         sensor_manager
+        command_handler
 )
