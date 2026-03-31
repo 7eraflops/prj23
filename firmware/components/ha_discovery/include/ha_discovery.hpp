@@ -51,4 +51,27 @@ private:
                                       const std::string& unit, const std::string& device_class,
                                       const std::string& entity_category,
                                       const std::string& state_class = "measurement");
+
+    /**
+     * @brief Publish control entities (buttons, numbers, switches, selects) for device management.
+     * @note These appear on the main "ESP32 Energy Meter" device.
+     *
+     * @param num_channels Number of channels to create switch/select entities for
+     */
+    void publish_control_entities(int num_channels = 12);
+
+private:
+    void publish_button_entity(const std::string& name, const std::string& command_topic,
+                               const std::string& icon, bool enabled_by_default = true);
+
+    void publish_number_entity(const std::string& name, const std::string& command_topic,
+                               const std::string& state_topic, int min, int max, int step,
+                               const std::string& unit, const std::string& icon);
+
+    void publish_switch_entity(const std::string& name, const std::string& command_topic,
+                               const std::string& state_topic, const std::string& icon);
+
+    void publish_select_entity(const std::string& name, const std::string& command_topic,
+                               const std::string& state_topic, const std::string& options,
+                               const std::string& icon);
 };
