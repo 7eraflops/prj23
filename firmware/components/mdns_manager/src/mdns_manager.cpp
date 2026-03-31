@@ -12,6 +12,8 @@
 
 static const char* TAG = "MdnsManager";
 
+static bool s_services_registered = false;
+
 esp_err_t MdnsManager::init(const std::string& hostname) {
     esp_err_t err = mdns_init();
     if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) {
@@ -43,10 +45,15 @@ esp_err_t MdnsManager::init(const std::string& hostname) {
 }
 
 void MdnsManager::refresh_services() {
-    // Aggressively refresh service: remove and re-add to force announcement
-    mdns_service_remove("_http", "_tcp");
+    if (s_services_registered) {
+        esp_err_t ret = mdns_service_remove("_http", "_tcp");
+        if (ret != ESP_OK && ret != ESP_ERR_NOT_FOUND) {
+            ESP_LOGW(TAG, "Failed to remove mDNS service: %s", esp_err_to_name(ret));
+        }
+    }
     mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
     mdns_service_txt_item_set("_http", "_tcp", "version", "1.0");
+    s_services_registered = true;
 
     ESP_LOGI(TAG, "mDNS refreshed");
 }

@@ -6,6 +6,9 @@
 #include "web_server.hpp"
 #include "wifi_manager.hpp"
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
 #include <esp_log.h>
 #include <esp_mac.h>
 #include <esp_system.h>
@@ -106,14 +109,16 @@ extern "C" void app_main() {
                 rssi = ap_info.rssi;
             }
             uint32_t free_heap = esp_get_free_heap_size();
-            uint32_t uptime = esp_timer_get_time() / 1000000;
+            uint32_t uptime_h = esp_timer_get_time() / 3600000000ULL;
             float mcu_temp = board_manager::get_mcu_temperature();
+            uint32_t stack_min = uxTaskGetStackHighWaterMark(NULL);
 
-            char payload[128];
+            char payload[200];
             snprintf(payload, sizeof(payload),
                      "{\"status\":\"alive\",\"wifi_rssi\":%d,\"free_heap\":%lu,\"uptime\":%lu,"
-                     "\"mcu_temp\":%.1f}",
-                     rssi, (unsigned long)free_heap, (unsigned long)uptime, mcu_temp);
+                     "\"stack_min\":%lu,\"mcu_temp\":%.1f}",
+                     rssi, (unsigned long)free_heap, (unsigned long)uptime_h,
+                     (unsigned long)stack_min, mcu_temp);
 
             mqtt.publish("energy_meter/heartbeat", payload, 0, false);
         }

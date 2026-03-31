@@ -49,5 +49,6 @@ private:
      */
     void publish_diagnostic_discovery(const std::string& sensor_type, const std::string& name,
                                       const std::string& unit, const std::string& device_class,
-                                      const std::string& entity_category);
+                                      const std::string& entity_category,
+                                      const std::string& state_class = "measurement");
 };

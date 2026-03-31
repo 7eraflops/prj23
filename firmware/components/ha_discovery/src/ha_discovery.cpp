@@ -46,9 +46,11 @@ void HaDiscovery::publish_discovery_messages(int num_channels) {
     vTaskDelay(pdMS_TO_TICKS(10));
     publish_diagnostic_discovery("free_heap", "Free Memory", "B", "data_size", "diagnostic");
     vTaskDelay(pdMS_TO_TICKS(10));
-    publish_diagnostic_discovery("uptime", "Uptime", "s", "duration", "diagnostic");
+    publish_diagnostic_discovery("uptime", "Uptime", "h", "duration", "diagnostic");
     vTaskDelay(pdMS_TO_TICKS(10));
     publish_diagnostic_discovery("mcu_temp", "MCU Temperature", "°C", "temperature", "diagnostic");
+    vTaskDelay(pdMS_TO_TICKS(10));
+    publish_diagnostic_discovery("stack_min", "Stack High Watermark", "B", "data_size", "diagnostic");
 
     ESP_LOGI(TAG, "Finished publishing discovery messages.");
 }
@@ -97,7 +99,8 @@ void HaDiscovery::publish_sensor_discovery(int channel, const std::string& senso
 void HaDiscovery::publish_diagnostic_discovery(const std::string& sensor_type,
                                                const std::string& name, const std::string& unit,
                                                const std::string& device_class,
-                                               const std::string& entity_category) {
+                                               const std::string& entity_category,
+                                               const std::string& state_class) {
     char topic[128];
     snprintf(topic, sizeof(topic), "homeassistant/sensor/%s_%s/config", _device_id.c_str(),
              sensor_type.c_str());
@@ -114,7 +117,9 @@ void HaDiscovery::publish_diagnostic_discovery(const std::string& sensor_type,
     if (!device_class.empty()) {
         payload << "\"device_class\": \"" << device_class << "\",";
     }
-    payload << "\"state_class\": \"measurement\",";
+    if (!state_class.empty()) {
+        payload << "\"state_class\": \"" << state_class << "\",";
+    }
     payload << "\"entity_category\": \"" << entity_category << "\",";
     payload << "\"availability_topic\": \"" << _status_topic << "\",";
     payload << "\"availability_template\": \"{{ value_json.status }}\",";

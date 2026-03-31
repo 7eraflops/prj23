@@ -147,58 +147,66 @@ void MqttManager::mqtt_event_handler(void* handler_args, esp_event_base_t base, 
 }
 
 void MqttManager::handle_event(esp_mqtt_event_handle_t event) {
-    std::lock_guard<std::mutex> lock(_mtx);
-    switch (event->event_id) {
-    case MQTT_EVENT_CONNECTED:
-        ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
-        _connected = true;
-        if (_connect_cb) {
-            _connect_cb();
+    bool connect_cb = false;
+    bool disconnect_cb = false;
+
+    {
+        std::lock_guard<std::mutex> lock(_mtx);
+        switch (event->event_id) {
+        case MQTT_EVENT_CONNECTED:
+            ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
+            _connected = true;
+            connect_cb = static_cast<bool>(_connect_cb);
+            break;
+
+        case MQTT_EVENT_DISCONNECTED:
+            ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
+            _connected = false;
+            disconnect_cb = static_cast<bool>(_disconnect_cb);
+            break;
+
+        case MQTT_EVENT_SUBSCRIBED:
+            ESP_LOGD(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
+            break;
+
+        case MQTT_EVENT_UNSUBSCRIBED:
+            ESP_LOGD(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
+            break;
+
+        case MQTT_EVENT_PUBLISHED:
+            ESP_LOGD(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
+            break;
+
+        case MQTT_EVENT_DATA: {
+            ESP_LOGD(TAG, "MQTT_EVENT_DATA");
+            if (_message_cb) {
+                std::string topic(event->topic, event->topic_len);
+                std::string payload(event->data, event->data_len);
+                _message_cb(topic, payload);
+            }
+            break;
         }
-        break;
 
-    case MQTT_EVENT_DISCONNECTED:
-        ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
-        _connected = false;
-        if (_disconnect_cb) {
-            _disconnect_cb();
+        case MQTT_EVENT_ERROR:
+            ESP_LOGE(TAG, "MQTT_EVENT_ERROR");
+            if (event->error_handle->error_type == MQTT_ERROR_TYPE_TCP_TRANSPORT) {
+                ESP_LOGE(TAG, "Reported from esp-tls: 0x%x", event->error_handle->esp_tls_last_esp_err);
+                ESP_LOGE(TAG, "Reported from tls stack: 0x%x", event->error_handle->esp_tls_stack_err);
+                ESP_LOGE(TAG, "Captured as transport's socket errno: %d",
+                         event->error_handle->esp_transport_sock_errno);
+            }
+            break;
+
+        default:
+            ESP_LOGD(TAG, "Other event id:%d", event->event_id);
+            break;
         }
-        break;
-
-    case MQTT_EVENT_SUBSCRIBED:
-        ESP_LOGD(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
-        break;
-
-    case MQTT_EVENT_UNSUBSCRIBED:
-        ESP_LOGD(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
-        break;
-
-    case MQTT_EVENT_PUBLISHED:
-        ESP_LOGD(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
-        break;
-
-    case MQTT_EVENT_DATA: {
-        ESP_LOGD(TAG, "MQTT_EVENT_DATA");
-        if (_message_cb) {
-            std::string topic(event->topic, event->topic_len);
-            std::string payload(event->data, event->data_len);
-            _message_cb(topic, payload);
-        }
-        break;
     }
 
-    case MQTT_EVENT_ERROR:
-        ESP_LOGE(TAG, "MQTT_EVENT_ERROR");
-        if (event->error_handle->error_type == MQTT_ERROR_TYPE_TCP_TRANSPORT) {
-            ESP_LOGE(TAG, "Reported from esp-tls: 0x%x", event->error_handle->esp_tls_last_esp_err);
-            ESP_LOGE(TAG, "Reported from tls stack: 0x%x", event->error_handle->esp_tls_stack_err);
-            ESP_LOGE(TAG, "Captured as transport's socket errno: %d",
-                     event->error_handle->esp_transport_sock_errno);
-        }
-        break;
-
-    default:
-        ESP_LOGD(TAG, "Other event id:%d", event->event_id);
-        break;
+    if (connect_cb) {
+        _connect_cb();
+    }
+    if (disconnect_cb) {
+        _disconnect_cb();
     }
 }
