@@ -35,6 +35,8 @@ public:
 
     /**
      * @brief Refresh or re-announce the mDNS services.
+     *        On first call, only adds the service. On subsequent calls,
+     *        removes and re-adds to force re-announcement.
      */
     static void refresh_services();
 
