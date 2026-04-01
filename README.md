@@ -50,7 +50,7 @@ A custom ESP32-based energy meter measuring up to 12 channels across a 3-phase s
 - [x] **Over-The-Air (OTA) Updates**
   - Implement OTA flashing mechanism.
   - Add an `/update` endpoint to the local web server to allow uploading firmware binaries.
-- [ ] **Two-Way MQTT Communication (Device Control)**
+- [x] **Two-Way MQTT Communication (Device Control)**
   - Add Home Assistant "Button" entities via HA Discovery (e.g., "Reboot").
   - Subscribe to command topics in `mqtt_manager` and execute device actions.
 - [ ] **Calibration & Multiplier Config**
