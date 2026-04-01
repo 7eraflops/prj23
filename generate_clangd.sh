@@ -1,115 +1,124 @@
 #!/usr/bin/env bash
-# gen_clangd.sh — minimal version when --query-driver is set in Zed
+# generate_clangd.sh — Run from repo root
 set -euo pipefail
 
-COMPILE_DB=$(find . -maxdepth 5 -name "compile_commands.json" ! -path "*/\.*" -print -quit 2>/dev/null)
-[[ -z "$COMPILE_DB" ]] && { echo "ERROR: compile_commands.json not found. Run 'idf.py build' first."; exit 1; }
-echo "Found: $COMPILE_DB"
+FIRMWARE_DIR="firmware"
+BUILD_DIR="${FIRMWARE_DIR}/build"
+COMPILE_COMMANDS="${BUILD_DIR}/compile_commands.json"
+CLANGD_OUT=".clangd"
 
-##############################################################################
-# Collect project-wide -f/-m/-W flags from the compile DB
-##############################################################################
-mapfile -t ALL_FLAGS < <(python3 - "$COMPILE_DB" << 'PYEOF'
-import json, sys, shlex
-from collections import Counter
-
-with open(sys.argv[1]) as f:
-    cmds = json.load(f)
-
-counts = Counter()
-total = len(cmds)
-for cmd in cmds:
-    parts = cmd.get("arguments") or shlex.split(cmd.get("command", ""))
-    for p in parts[1:]:
-        if p.startswith(("-f", "-m", "-W")):
-            counts[p] += 1
-
-threshold = max(1, total * 0.10)
-for flag, count in counts.items():
-    if count >= threshold:
-        print(flag)
-PYEOF
-)
-
-##############################################################################
-# Known-unsupported GCC/Xtensa flags
-##############################################################################
-KNOWN_UNSUPPORTED=(
-    "-mlongcalls" "-mtext-section-literals"
-    "-mfix-esp32-psram-cache-issue"
-    "-mfix-esp32-psram-cache-strategy=memw"
-    "-mabi=windowed"
-    "-fno-tree-switch-conversion" "-fno-shrink-wrap" "-fno-jump-tables"
-    "-fno-reorder-blocks" "-fno-reorder-functions"
-    "-fno-printf-return-value" "-fstrict-volatile-bitfields"
-    "-fmacro-prefix-map=.=."
-    "-Wno-frame-address" "-Wno-maybe-uninitialized"
-    "-Wno-format-truncation" "-Wno-format-overflow"
-    "-Wno-stringop-truncation" "-Wno-stringop-overflow"
-    "-Wno-restrict" "-Wno-alloc-size-larger-than"
-    "-Wno-return-local-addr"
-)
-
-##############################################################################
-# Dynamic detection via clang
-##############################################################################
-DYNAMIC_UNSUPPORTED=()
-if command -v clang &>/dev/null; then
-    for flag in "${ALL_FLAGS[@]}"; do
-        if ! clang "$flag" -x c++ /dev/null -fsyntax-only \
-                   -Werror=unknown-argument -Werror=unsupported-option 2>/dev/null; then
-            DYNAMIC_UNSUPPORTED+=("$flag")
-        fi
-    done
+if [[ ! -f "$COMPILE_COMMANDS" ]]; then
+    echo "ERROR: $COMPILE_COMMANDS not found. Run 'idf.py reconfigure' or 'idf.py build' first." >&2
+    exit 1
 fi
 
-##############################################################################
-# Merge & deduplicate
-##############################################################################
-declare -A _seen
-FINAL_REMOVE=()
-for f in "${KNOWN_UNSUPPORTED[@]}" "${DYNAMIC_UNSUPPORTED[@]}"; do
-    if [[ -z "${_seen[$f]+_}" ]]; then _seen[$f]=1; FINAL_REMOVE+=("$f"); fi
+# ── 1. Baseline flags: Always remove regardless of clang version ─────────────
+# These are GCC/Xtensa specific or linker flags that consistently break clangd parsing.
+BASELINE_REMOVE=(
+    "--specs=*"
+    "-mlongcalls"
+    "-mtext-section-literals"
+    "-fno-tree-switch-conversion"
+    "-fstrict-volatile-bitfields"
+    "-fno-jump-tables"
+    "-fno-shrink-wrap"
+    "-fno-reorder-functions"
+    "-fstack-reuse=*"
+    "-Wno-frame-address"
+    "-fmacro-prefix-map=*"
+    "-fdebug-prefix-map=*"
+    "-Wl,*"
+)
+
+# ── 2. Dynamically detect additional unknown flags ───────────────────────────
+echo "Scanning $COMPILE_COMMANDS for candidate GCC flags..."
+ALL_FLAGS=$(python3 - "$COMPILE_COMMANDS" <<'EOF'
+import json, sys, re
+with open(sys.argv[1]) as f:
+    cmds = json.load(f)
+flags = set()
+for entry in cmds:
+    for flag in entry.get("arguments", entry.get("command", "").split()):
+        # Capture standard flag prefixes. Convert values (e.g. -O2) to wildcards if needed,
+        # but for simplicity, we capture the exact flag to test it.
+        if re.match(r'^-[fmWO]', flag):
+            flag = re.sub(r'=[^=]+$', '=*', flag)
+            flags.add(flag)
+for f in sorted(flags):
+    print(f)
+EOF
+)
+
+echo "Probing clang for unrecognised flags..."
+DYNAMIC_FLAGS=()
+while IFS= read -r flag; do
+    already=0
+    for b in "${BASELINE_REMOVE[@]}"; do
+        [[ "$b" == "${flag/=*/=*}" || "$b" == "$flag" ]] && already=1 && break
+    done
+    [[ $already -eq 1 ]] && continue
+
+    probe="${flag/=\*/=placeholder}"
+    # Use standard clang to probe for flag support
+    if clang -x c /dev/null -fsyntax-only "$probe" 2>&1 \
+        | grep -qiE "unknown|unrecognized|unsupported|not supported|unused argument"; then
+        DYNAMIC_FLAGS+=("    - \"${flag}\"")
+    fi
+done <<< "$ALL_FLAGS"
+
+# ── 3. Write .clangd ─────────────────────────────────────────────────────────
+BASELINE_YAML=""
+for f in "${BASELINE_REMOVE[@]}"; do
+    BASELINE_YAML+="    - \"${f}\""$'\n'
 done
 
-##############################################################################
-# Write .clangd  (no Add section needed — query-driver handles it)
-##############################################################################
-{
-cat << HEADER
-# Auto-generated by gen_clangd.sh — $(date '+%Y-%m-%d')
-# System includes and target are handled by --query-driver in Zed settings.
-HEADER
+cat > "$CLANGD_OUT" <<YAML
+# .clangd — Auto-generated by generate_clangd.sh
+# Regenerate after major ESP-IDF updates or compiler changes.
 
-echo "CompileFlags:"
-echo "  Remove:"
-for f in "${FINAL_REMOVE[@]}"; do
-    printf '    - "%s"\n' "$f"
-done
-
-cat << 'DIAG'
+CompileFlags:
+  Add:
+    - "-Wno-unknown-warning-option"
+  Remove:
+    # --- Baseline GCC/Xtensa overrides ---
+${BASELINE_YAML}
+    # --- Dynamically detected unsupported flags ---
+$(printf '%s\n' "${DYNAMIC_FLAGS[@]:-}")
 
 Diagnostics:
-  Suppress:
-    - "attribute_not_type_attr"
   UnusedIncludes: Strict
   MissingIncludes: Strict
   ClangTidy:
     Add:
+      - bugprone-*
+      - performance-*
+      - readability-*
+      - modernize-*
+      - portability-*
+    Remove:
+      # Exclude highly opinionated or noisy checks
       - modernize-use-trailing-return-type
       - readability-magic-numbers
-      - bugprone-use-after-move
-      - bugprone-dangling-handle
-      - clang-analyzer-cplusplus.NewDeleteLeaks
-      - cppcoreguidelines-smart-ptr
-      - performance-unnecessary-value-param
-      - performance-for-range-copy
-      - bugprone-integer-division
+      - bugprone-reserved-identifier
+      - readability-braces-around-statements
+      - readability-identifier-length
+      - readability-function-cognitive-complexity
+      - modernize-macro-to-enum # ESP-IDF heavily relies on C macros
 
 Index:
   Background: Build
-DIAG
-} > .clangd
 
-echo "✓ .clangd written (${#FINAL_REMOVE[@]} flags removed)."
-echo "Make sure --query-driver is set in Zed → settings.json pointing at your xtensa compiler glob."
+InlayHints:
+  Enabled: Yes
+  ParameterNames: Yes
+  DeducedTypes: Yes
+  Designators: Yes
+
+Hover:
+  ShowAKA: Yes
+YAML
+
+echo ""
+echo "Successfully generated: $CLANGD_OUT"
+echo "  Baseline: ${#BASELINE_REMOVE[@]} flags removed."
+echo "  Dynamic:  ${#DYNAMIC_FLAGS[@]} additional flags removed."
