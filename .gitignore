@@ -16,6 +16,7 @@ core
 .zed/
 compile_commands.json
 .clangd
+.envrc
 
 # =========================
 # KiCad (Hardware)
