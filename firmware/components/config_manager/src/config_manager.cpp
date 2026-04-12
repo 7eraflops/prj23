@@ -3,6 +3,8 @@
 #include <esp_log.h>
 #include <nvs.h>
 
+#include <cstring>
+
 static const char* TAG = "ConfigManager";
 static const char* NVS_NAMESPACE = "app_config";
 
@@ -104,6 +106,40 @@ esp_err_t ConfigManager::save_u8(const char* key, uint8_t value) {
     return err;
 }
 
+esp_err_t ConfigManager::load_blob(const char* key, void* value, size_t value_size) {
+    nvs_handle_t handle;
+    esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READONLY, &handle);
+    if (err != ESP_OK) {
+        return err;
+    }
+
+    size_t required_size = value_size;
+    err = nvs_get_blob(handle, key, value, &required_size);
+    nvs_close(handle);
+
+    if (err == ESP_OK && required_size != value_size) {
+        return ESP_ERR_NVS_INVALID_LENGTH;
+    }
+
+    return err;
+}
+
+esp_err_t ConfigManager::save_blob(const char* key, const void* value, size_t value_size) {
+    nvs_handle_t handle;
+    esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &handle);
+    if (err != ESP_OK) {
+        return err;
+    }
+
+    err = nvs_set_blob(handle, key, value, value_size);
+    if (err == ESP_OK) {
+        err = nvs_commit(handle);
+    }
+
+    nvs_close(handle);
+    return err;
+}
+
 esp_err_t ConfigManager::load() {
     std::lock_guard<std::mutex> lock(_mtx);
     ESP_LOGI(TAG, "Loading configuration from NVS...");
@@ -118,6 +154,7 @@ esp_err_t ConfigManager::load() {
 
     load_u16("ch_active", _config.channel_active_mask);
     load_channel_settings();
+    load_calibration_settings();
 
     return ESP_OK;
 }
@@ -155,6 +192,14 @@ esp_err_t ConfigManager::save() {
         char key[16];
         snprintf(key, sizeof(key), "ch_phase_%d", i);
         err = save_u8(key, static_cast<uint8_t>(_config.channel_phases[i]));
+        if (err != ESP_OK)
+            return err;
+    }
+
+    for (int i = 0; i < NUM_CHANNELS; ++i) {
+        char key[16];
+        snprintf(key, sizeof(key), "ch_cal_%d", i);
+        err = save_blob(key, &_config.channel_calibration[i], sizeof(_config.channel_calibration[i]));
         if (err != ESP_OK)
             return err;
     }
@@ -241,6 +286,34 @@ void ConfigManager::save_channel_settings() {
     }
 }
 
+AppConfig::ChannelCalibration ConfigManager::get_channel_calibration(int channel) const {
+    if (channel < 0 || channel >= NUM_CHANNELS) {
+        return AppConfig::ChannelCalibration{};
+    }
+
+    std::lock_guard<std::mutex> lock(_mtx);
+    return _config.channel_calibration[channel];
+}
+
+void ConfigManager::set_channel_calibration(int channel,
+                                            const AppConfig::ChannelCalibration& calibration) {
+    if (channel < 0 || channel >= NUM_CHANNELS) {
+        return;
+    }
+
+    std::lock_guard<std::mutex> lock(_mtx);
+    _config.channel_calibration[channel] = calibration;
+}
+
+void ConfigManager::save_calibration_settings() {
+    std::lock_guard<std::mutex> lock(_mtx);
+    for (int i = 0; i < NUM_CHANNELS; ++i) {
+        char key[16];
+        snprintf(key, sizeof(key), "ch_cal_%d", i);
+        save_blob(key, &_config.channel_calibration[i], sizeof(_config.channel_calibration[i]));
+    }
+}
+
 void ConfigManager::load_channel_settings() {
     for (int i = 0; i < NUM_CHANNELS; ++i) {
         char key[16];
@@ -248,6 +321,19 @@ void ConfigManager::load_channel_settings() {
         uint8_t val;
         if (load_u8(key, val) == ESP_OK) {
             _config.channel_phases[i] = static_cast<ChannelPhase>(val);
+        }
+    }
+}
+
+void ConfigManager::load_calibration_settings() {
+    for (int i = 0; i < NUM_CHANNELS; ++i) {
+        char key[16];
+        snprintf(key, sizeof(key), "ch_cal_%d", i);
+
+        AppConfig::ChannelCalibration calibration{};
+        const esp_err_t err = load_blob(key, &calibration, sizeof(calibration));
+        if (err == ESP_OK) {
+            _config.channel_calibration[i] = calibration;
         }
     }
 }

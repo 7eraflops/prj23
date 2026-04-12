@@ -32,7 +32,6 @@ esp_err_t MqttManager::start() {
         uri = "mqtt://" + uri;
     }
 
-    // Using ESP-IDF v5.x compatible configuration structure
     esp_mqtt_client_config_t mqtt_cfg = {};
     mqtt_cfg.broker.address.uri = uri.c_str();
 
@@ -95,13 +94,17 @@ bool MqttManager::is_connected() const {
 
 int MqttManager::publish(const std::string& topic, const std::string& payload, int qos,
                          bool retain) {
-    std::lock_guard<std::mutex> lock(_mtx);
-    if (!_connected || !_client) {
-        ESP_LOGW(TAG, "Cannot publish, MQTT client not connected.");
-        return -1;
+    esp_mqtt_client_handle_t client = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(_mtx);
+        if (!_connected || !_client) {
+            ESP_LOGW(TAG, "Cannot publish, MQTT client not connected.");
+            return -1;
+        }
+        client = _client;
     }
 
-    int msg_id = esp_mqtt_client_publish(_client, topic.c_str(), payload.c_str(), payload.length(),
+    int msg_id = esp_mqtt_client_publish(client, topic.c_str(), payload.c_str(), payload.length(),
                                          qos, retain);
     if (msg_id < 0) {
         ESP_LOGE(TAG, "Failed to publish message to topic: %s", topic.c_str());
@@ -112,13 +115,17 @@ int MqttManager::publish(const std::string& topic, const std::string& payload, i
 }
 
 int MqttManager::subscribe(const std::string& topic, int qos) {
-    std::lock_guard<std::mutex> lock(_mtx);
-    if (!_connected || !_client) {
-        ESP_LOGW(TAG, "Cannot subscribe, MQTT client not connected.");
-        return -1;
+    esp_mqtt_client_handle_t client = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(_mtx);
+        if (!_connected || !_client) {
+            ESP_LOGW(TAG, "Cannot subscribe, MQTT client not connected.");
+            return -1;
+        }
+        client = _client;
     }
 
-    int msg_id = esp_mqtt_client_subscribe(_client, topic.c_str(), qos);
+    int msg_id = esp_mqtt_client_subscribe(client, topic.c_str(), qos);
     if (msg_id < 0) {
         ESP_LOGE(TAG, "Failed to subscribe to topic: %s", topic.c_str());
     } else {
@@ -128,27 +135,35 @@ int MqttManager::subscribe(const std::string& topic, int qos) {
 }
 
 void MqttManager::on_connect(ConnectCallback cb) {
+    std::lock_guard<std::mutex> lock(_mtx);
     _connect_cb = std::move(cb);
 }
 
 void MqttManager::on_disconnect(DisconnectCallback cb) {
+    std::lock_guard<std::mutex> lock(_mtx);
     _disconnect_cb = std::move(cb);
 }
 
 void MqttManager::on_message(MessageCallback cb) {
+    std::lock_guard<std::mutex> lock(_mtx);
     _message_cb = std::move(cb);
 }
 
 void MqttManager::mqtt_event_handler(void* handler_args, esp_event_base_t base, int32_t event_id,
                                      void* event_data) {
+    (void)base;
+    (void)event_id;
     MqttManager* manager = static_cast<MqttManager*>(handler_args);
     esp_mqtt_event_handle_t event = static_cast<esp_mqtt_event_handle_t>(event_data);
     manager->handle_event(event);
 }
 
 void MqttManager::handle_event(esp_mqtt_event_handle_t event) {
-    bool connect_cb = false;
-    bool disconnect_cb = false;
+    ConnectCallback connect_cb;
+    DisconnectCallback disconnect_cb;
+    MessageCallback message_cb;
+    std::string message_topic;
+    std::string message_payload;
 
     {
         std::lock_guard<std::mutex> lock(_mtx);
@@ -156,13 +171,13 @@ void MqttManager::handle_event(esp_mqtt_event_handle_t event) {
         case MQTT_EVENT_CONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
             _connected = true;
-            connect_cb = static_cast<bool>(_connect_cb);
+            connect_cb = _connect_cb;
             break;
 
         case MQTT_EVENT_DISCONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
             _connected = false;
-            disconnect_cb = static_cast<bool>(_disconnect_cb);
+            disconnect_cb = _disconnect_cb;
             break;
 
         case MQTT_EVENT_SUBSCRIBED:
@@ -177,15 +192,14 @@ void MqttManager::handle_event(esp_mqtt_event_handle_t event) {
             ESP_LOGD(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
             break;
 
-        case MQTT_EVENT_DATA: {
+        case MQTT_EVENT_DATA:
             ESP_LOGD(TAG, "MQTT_EVENT_DATA");
             if (_message_cb) {
-                std::string topic(event->topic, event->topic_len);
-                std::string payload(event->data, event->data_len);
-                _message_cb(topic, payload);
+                message_cb = _message_cb;
+                message_topic.assign(event->topic, event->topic_len);
+                message_payload.assign(event->data, event->data_len);
             }
             break;
-        }
 
         case MQTT_EVENT_ERROR:
             ESP_LOGE(TAG, "MQTT_EVENT_ERROR");
@@ -204,9 +218,12 @@ void MqttManager::handle_event(esp_mqtt_event_handle_t event) {
     }
 
     if (connect_cb) {
-        _connect_cb();
+        connect_cb();
     }
     if (disconnect_cb) {
-        _disconnect_cb();
+        disconnect_cb();
+    }
+    if (message_cb) {
+        message_cb(message_topic, message_payload);
     }
 }

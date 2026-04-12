@@ -26,6 +26,14 @@ struct AppConfig {
     uint16_t channel_active_mask = 0x0FFF;
     ChannelPhase channel_phases[NUM_CHANNELS];
 
+    struct ChannelCalibration {
+        float current_gain = 1.0F;
+        float power_gain = 1.0F;
+        float energy_offset_kwh = 0.0F;
+    };
+
+    ChannelCalibration channel_calibration[NUM_CHANNELS];
+
     AppConfig() {
         for (int i = 0; i < NUM_CHANNELS; ++i) {
             if (i < 4) {
@@ -87,6 +95,10 @@ public:
 
     void save_channel_settings();
 
+    AppConfig::ChannelCalibration get_channel_calibration(int channel) const;
+    void set_channel_calibration(int channel, const AppConfig::ChannelCalibration& calibration);
+    void save_calibration_settings();
+
 private:
     AppConfig _config;
     mutable std::mutex _mtx;
@@ -101,5 +113,9 @@ private:
     esp_err_t load_u8(const char* key, uint8_t& value);
     esp_err_t save_u8(const char* key, uint8_t value);
 
+    esp_err_t load_blob(const char* key, void* value, size_t value_size);
+    esp_err_t save_blob(const char* key, const void* value, size_t value_size);
+
     void load_channel_settings();
+    void load_calibration_settings();
 };

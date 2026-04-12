@@ -4,6 +4,8 @@
 #include "ha_discovery.hpp"
 #include "mdns_manager.hpp"
 #include "mqtt_manager.hpp"
+#include "sensor_manager.hpp"
+#include "atm90e32_sensor.hpp"
 #include "web_server.hpp"
 #include "wifi_manager.hpp"
 
@@ -32,6 +34,8 @@ extern "C" void app_main() {
              base_mac[5]);
     static HaDiscovery ha_discovery(mqtt, std::string(device_id));
     static CommandHandler cmd_handler(mqtt, config_mgr, wifi, std::string(device_id));
+    static auto sensor_backend = std::make_unique<ATM90E32Sensor>(config_mgr);
+    static SensorManager sensor_manager(std::move(sensor_backend), mqtt, NUM_CHANNELS);
 
     board_manager::init_temperature_sensor();
 
@@ -97,6 +101,10 @@ extern "C" void app_main() {
 
         if (mqtt.start() != ESP_OK) {
             ESP_LOGE(TAG, "Failed to start MQTT Manager");
+        }
+
+        if (!sensor_manager.start()) {
+            ESP_LOGE(TAG, "Failed to start Sensor Manager");
         }
     } else {
         ESP_LOGI(TAG, "Device is NOT configured. Starting Provisioning AP...");
