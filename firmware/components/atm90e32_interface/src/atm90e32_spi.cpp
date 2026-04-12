@@ -1,15 +1,17 @@
 #include "atm90e32_spi.hpp"
 
+#include "atm90e32_mock.hpp"
 #include <esp_log.h>
 
 #include <cstring>
+#include <memory>
 
 namespace atm90e32 {
 
 static const char* TAG = "ATM90_SPI";
 
 SpiTransport::~SpiTransport() {
-    if (!_initialized) {
+    if (!_initialized || _config.simulate) {
         return;
     }
 
@@ -30,6 +32,14 @@ esp_err_t SpiTransport::init(const SpiBusConfig& config) {
     }
 
     _config = config;
+
+    if (_config.simulate) {
+        _mock = std::make_shared<mock::MockChips>();
+
+        _initialized = true;
+        ESP_LOGW(TAG, "ATM90E32 SPI transport in simulation mode");
+        return ESP_OK;
+    }
 
     spi_bus_config_t bus_cfg = {};
     bus_cfg.miso_io_num = _config.miso_gpio;
@@ -68,6 +78,10 @@ esp_err_t SpiTransport::init(const SpiBusConfig& config) {
 
 esp_err_t SpiTransport::transfer16(std::size_t chip_index, bool is_read, uint16_t reg,
                                    uint16_t tx_value, uint16_t& rx_value) const {
+    if (_config.simulate) {
+        return simulate_transfer(chip_index, is_read, reg, tx_value, rx_value);
+    }
+
     if (!_initialized || chip_index >= _devices.size() || _devices[chip_index] == nullptr) {
         return ESP_ERR_INVALID_STATE;
     }
@@ -102,6 +116,22 @@ esp_err_t SpiTransport::transfer16(std::size_t chip_index, bool is_read, uint16_
 
     uint16_t rx_raw = static_cast<uint16_t>((rx_buffer[2] << 8) | rx_buffer[3]);
     rx_value = static_cast<uint16_t>((rx_raw >> 8) | (rx_raw << 8));
+    return ESP_OK;
+}
+
+esp_err_t SpiTransport::simulate_transfer(std::size_t chip_index, bool is_read, uint16_t reg,
+                                          uint16_t tx_value, uint16_t& rx_value) const {
+    if (!_initialized || !_mock) {
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    if (is_read) {
+        rx_value = _mock->read(chip_index, reg);
+        return ESP_OK;
+    }
+
+    _mock->write(chip_index, reg, tx_value);
+    rx_value = 0;
     return ESP_OK;
 }
 

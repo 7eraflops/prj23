@@ -16,6 +16,7 @@ ATM90E32Sensor::ATM90E32Sensor(ConfigManager& config_manager)
 
 bool ATM90E32Sensor::init() {
     atm90e32::SpiBusConfig spi_cfg;
+    spi_cfg.simulate = true;
     if (_transport.init(spi_cfg) != ESP_OK) {
         ESP_LOGE(TAG, "Failed to initialize ATM90E32 SPI transport");
         return false;

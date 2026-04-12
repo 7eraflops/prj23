@@ -7,8 +7,13 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 
 namespace atm90e32 {
+
+namespace mock {
+class MockChips;
+}
 
 struct SpiBusConfig {
     spi_host_device_t host = SPI2_HOST;
@@ -17,6 +22,7 @@ struct SpiBusConfig {
     int mosi_gpio = 11;
     std::array<int, 4> cs_gpios = {10, 9, 8, 7};
     int clock_hz = 200000;
+    bool simulate = false;
 };
 
 class SpiTransport {
@@ -31,12 +37,16 @@ public:
                            int32_t& out_value) const;
 
 private:
+    esp_err_t simulate_transfer(std::size_t chip_index, bool is_read, uint16_t reg, uint16_t tx_value,
+                                uint16_t& rx_value) const;
+
     esp_err_t transfer16(std::size_t chip_index, bool is_read, uint16_t reg, uint16_t tx_value,
                          uint16_t& rx_value) const;
 
     bool _initialized = false;
     SpiBusConfig _config{};
     std::array<spi_device_handle_t, 4> _devices{};
+    mutable std::shared_ptr<mock::MockChips> _mock;
 };
 
 } // namespace atm90e32
