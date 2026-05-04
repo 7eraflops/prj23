@@ -3,6 +3,8 @@
     "3dviewports": [],
     "design_settings": {
       "defaults": {
+        "apply_defaults_to_fp_barcodes": false,
+        "apply_defaults_to_fp_dimensions": false,
         "apply_defaults_to_fp_fields": false,
         "apply_defaults_to_fp_shapes": false,
         "apply_defaults_to_fp_text": false,
@@ -51,7 +53,13 @@
           "min_clearance": 0.5
         }
       },
-      "diff_pair_dimensions": [],
+      "diff_pair_dimensions": [
+        {
+          "gap": 0.0,
+          "via_gap": 0.0,
+          "width": 0.0
+        }
+      ],
       "drc_exclusions": [],
       "meta": {
         "version": 2
@@ -71,6 +79,7 @@
         "extra_footprint": "warning",
         "footprint": "error",
         "footprint_filters_mismatch": "ignore",
+        "footprint_symbol_field_mismatch": "warning",
         "footprint_symbol_mismatch": "warning",
         "footprint_type_mismatch": "ignore",
         "hole_clearance": "error",
@@ -88,15 +97,16 @@
         "mirrored_text_on_front_layer": "warning",
         "missing_courtyard": "ignore",
         "missing_footprint": "warning",
+        "missing_tuning_profile": "warning",
         "net_conflict": "warning",
         "nonmirrored_text_on_back_layer": "warning",
         "npth_inside_courtyard": "ignore",
         "padstack": "warning",
         "pth_inside_courtyard": "ignore",
         "shorting_items": "error",
-        "silk_edge_clearance": "warning",
+        "silk_edge_clearance": "ignore",
         "silk_over_copper": "warning",
-        "silk_overlap": "warning",
+        "silk_overlap": "ignore",
         "skew_out_of_range": "error",
         "solder_mask_bridge": "error",
         "starved_thermal": "error",
@@ -107,9 +117,12 @@
         "too_many_vias": "error",
         "track_angle": "error",
         "track_dangling": "warning",
+        "track_not_centered_on_via": "ignore",
+        "track_on_post_machined_layer": "error",
         "track_segment_length": "error",
         "track_width": "error",
         "tracks_crossing": "error",
+        "tuning_profile_track_geometries": "ignore",
         "unconnected_items": "error",
         "unresolved_variable": "error",
         "via_dangling": "warning",
@@ -180,7 +193,12 @@
           "td_width_to_size_filter_ratio": 0.9
         }
       ],
-      "track_widths": [],
+      "track_widths": [
+        0.0,
+        0.2,
+        0.5,
+        1.5
+      ],
       "tuning_pattern_settings": {
         "diff_pair_defaults": {
           "corner_radius_percentage": 80,
@@ -207,21 +225,37 @@
           "spacing": 0.6
         }
       },
-      "via_dimensions": [],
+      "via_dimensions": [
+        {
+          "diameter": 0.0,
+          "drill": 0.0
+        }
+      ],
       "zones_allow_external_fillets": false
     },
     "ipc2581": {
+      "bom_rev": "",
       "dist": "",
       "distpn": "",
       "internal_id": "",
       "mfg": "",
-      "mpn": ""
+      "mpn": "",
+      "sch_revision": ""
     },
     "layer_pairs": [],
     "layer_presets": [],
     "viewports": []
   },
   "boards": [],
+  "component_class_settings": {
+    "assignments": [],
+    "meta": {
+      "version": 0
+    },
+    "sheet_component_classes": {
+      "enabled": false
+    }
+  },
   "cvpcb": {
     "equivalence_files": []
   },
@@ -411,11 +445,14 @@
       "duplicate_sheet_names": "error",
       "endpoint_off_grid": "warning",
       "extra_units": "error",
+      "field_name_whitespace": "warning",
       "footprint_filter": "ignore",
       "footprint_link_issues": "warning",
       "four_way_junction": "ignore",
       "global_label_dangling": "warning",
+      "ground_pin_not_ground": "warning",
       "hier_label_mismatch": "error",
+      "isolated_pin_label": "warning",
       "label_dangling": "error",
       "label_multiple_wires": "warning",
       "lib_symbol_issues": "warning",
@@ -438,6 +475,7 @@
       "similar_power": "warning",
       "simulation_model_issue": "ignore",
       "single_global_label": "ignore",
+      "stacked_pin_name": "warning",
       "unannotated": "error",
       "unconnected_wire_endpoint": "warning",
       "undefined_netclass": "error",
@@ -451,7 +489,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "HA_energy_monitor.kicad_pro",
+    "filename": "mainboard.kicad_pro",
     "version": 3
   },
   "net_settings": {
@@ -470,17 +508,432 @@
         "priority": 2147483647,
         "schematic_color": "rgba(0, 0, 0, 0.000)",
         "track_width": 0.2,
+        "tuning_profile": "",
         "via_diameter": 0.6,
         "via_drill": 0.3,
         "wire_width": 6
+      },
+      {
+        "name": "Power",
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 0,
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "track_width": 0.4,
+        "tuning_profile": ""
       }
     ],
     "meta": {
-      "version": 4
+      "version": 5
     },
     "net_colors": null,
-    "netclass_assignments": null,
-    "netclass_patterns": []
+    "netclass_assignments": {
+      "+3V3": [
+        "metering_block"
+      ],
+      "/CS_1": [
+        "metering_block"
+      ],
+      "/CS_2": [
+        "metering_block"
+      ],
+      "/CS_3": [
+        "metering_block"
+      ],
+      "/CS_4": [
+        "metering_block"
+      ],
+      "/SPI_MISO": [
+        "metering_block"
+      ],
+      "/SPI_MOSI": [
+        "metering_block"
+      ],
+      "/SPI_SCK": [
+        "metering_block"
+      ],
+      "/metering_block/I_CT1N": [
+        "metering_block"
+      ],
+      "/metering_block/I_CT1P": [
+        "metering_block"
+      ],
+      "/metering_block/I_CT2N": [
+        "metering_block"
+      ],
+      "/metering_block/I_CT2P": [
+        "metering_block"
+      ],
+      "/metering_block/I_CT3N": [
+        "metering_block"
+      ],
+      "/metering_block/I_CT3P": [
+        "metering_block"
+      ],
+      "/metering_block/V1P_IN": [
+        "metering_block"
+      ],
+      "/metering_block/V2P_IN": [
+        "metering_block"
+      ],
+      "/metering_block/V3P_IN": [
+        "metering_block"
+      ],
+      "/metering_block1/I_CT1N": [
+        "metering_block"
+      ],
+      "/metering_block1/I_CT1P": [
+        "metering_block"
+      ],
+      "/metering_block1/I_CT2N": [
+        "metering_block"
+      ],
+      "/metering_block1/I_CT2P": [
+        "metering_block"
+      ],
+      "/metering_block1/I_CT3N": [
+        "metering_block"
+      ],
+      "/metering_block1/I_CT3P": [
+        "metering_block"
+      ],
+      "/metering_block2/I_CT1N": [
+        "metering_block"
+      ],
+      "/metering_block2/I_CT1P": [
+        "metering_block"
+      ],
+      "/metering_block2/I_CT2N": [
+        "metering_block"
+      ],
+      "/metering_block2/I_CT2P": [
+        "metering_block"
+      ],
+      "/metering_block2/I_CT3N": [
+        "metering_block"
+      ],
+      "/metering_block2/I_CT3P": [
+        "metering_block"
+      ],
+      "/metering_block3/I_CT1N": [
+        "metering_block"
+      ],
+      "/metering_block3/I_CT1P": [
+        "metering_block"
+      ],
+      "/metering_block3/I_CT2N": [
+        "metering_block"
+      ],
+      "/metering_block3/I_CT2P": [
+        "metering_block"
+      ],
+      "/metering_block3/I_CT3N": [
+        "metering_block"
+      ],
+      "/metering_block3/I_CT3P": [
+        "metering_block"
+      ],
+      "GND": [
+        "metering_block"
+      ],
+      "Net-(J10-Pin_1)": [
+        "metering_block"
+      ],
+      "Net-(J10-Pin_2)": [
+        "metering_block"
+      ],
+      "Net-(J11-Pin_1)": [
+        "metering_block"
+      ],
+      "Net-(J11-Pin_2)": [
+        "metering_block"
+      ],
+      "Net-(J12-Pin_1)": [
+        "metering_block"
+      ],
+      "Net-(J12-Pin_2)": [
+        "metering_block"
+      ],
+      "Net-(J13-Pin_1)": [
+        "metering_block"
+      ],
+      "Net-(J13-Pin_2)": [
+        "metering_block"
+      ],
+      "Net-(J2-Pin_1)": [
+        "metering_block"
+      ],
+      "Net-(J2-Pin_2)": [
+        "metering_block"
+      ],
+      "Net-(J3-Pin_1)": [
+        "metering_block"
+      ],
+      "Net-(J3-Pin_2)": [
+        "metering_block"
+      ],
+      "Net-(J4-Pin_1)": [
+        "metering_block"
+      ],
+      "Net-(J4-Pin_2)": [
+        "metering_block"
+      ],
+      "Net-(J5-Pin_1)": [
+        "metering_block"
+      ],
+      "Net-(J5-Pin_2)": [
+        "metering_block"
+      ],
+      "Net-(J6-Pin_1)": [
+        "metering_block"
+      ],
+      "Net-(J6-Pin_2)": [
+        "metering_block"
+      ],
+      "Net-(J7-Pin_1)": [
+        "metering_block"
+      ],
+      "Net-(J7-Pin_2)": [
+        "metering_block"
+      ],
+      "Net-(J8-Pin_1)": [
+        "metering_block"
+      ],
+      "Net-(J8-Pin_2)": [
+        "metering_block"
+      ],
+      "Net-(J9-Pin_1)": [
+        "metering_block"
+      ],
+      "Net-(J9-Pin_2)": [
+        "metering_block"
+      ],
+      "Net-(U2-OSCI)": [
+        "metering_block"
+      ],
+      "Net-(U2-OSCO)": [
+        "metering_block"
+      ],
+      "Net-(U2-V1N)": [
+        "metering_block"
+      ],
+      "Net-(U2-V2N)": [
+        "metering_block"
+      ],
+      "Net-(U2-V3N)": [
+        "metering_block"
+      ],
+      "Net-(U2-VDD18)": [
+        "metering_block"
+      ],
+      "Net-(U2-VREF)": [
+        "metering_block"
+      ],
+      "Net-(U2-~{RESET})": [
+        "metering_block"
+      ],
+      "Net-(U3-OSCI)": [
+        "metering_block"
+      ],
+      "Net-(U3-OSCO)": [
+        "metering_block"
+      ],
+      "Net-(U3-V1N)": [
+        "metering_block"
+      ],
+      "Net-(U3-V2N)": [
+        "metering_block"
+      ],
+      "Net-(U3-V3N)": [
+        "metering_block"
+      ],
+      "Net-(U3-VDD18)": [
+        "metering_block"
+      ],
+      "Net-(U3-VREF)": [
+        "metering_block"
+      ],
+      "Net-(U3-~{RESET})": [
+        "metering_block"
+      ],
+      "Net-(U4-OSCI)": [
+        "metering_block"
+      ],
+      "Net-(U4-OSCO)": [
+        "metering_block"
+      ],
+      "Net-(U4-V1N)": [
+        "metering_block"
+      ],
+      "Net-(U4-V2N)": [
+        "metering_block"
+      ],
+      "Net-(U4-V3N)": [
+        "metering_block"
+      ],
+      "Net-(U4-VDD18)": [
+        "metering_block"
+      ],
+      "Net-(U4-VREF)": [
+        "metering_block"
+      ],
+      "Net-(U4-~{RESET})": [
+        "metering_block"
+      ],
+      "Net-(U5-OSCI)": [
+        "metering_block"
+      ],
+      "Net-(U5-OSCO)": [
+        "metering_block"
+      ],
+      "Net-(U5-V1N)": [
+        "metering_block"
+      ],
+      "Net-(U5-V2N)": [
+        "metering_block"
+      ],
+      "Net-(U5-V3N)": [
+        "metering_block"
+      ],
+      "Net-(U5-VDD18)": [
+        "metering_block"
+      ],
+      "Net-(U5-VREF)": [
+        "metering_block"
+      ],
+      "Net-(U5-~{RESET})": [
+        "metering_block"
+      ],
+      "unconnected-(U2-CF1-Pad25)": [
+        "metering_block"
+      ],
+      "unconnected-(U2-CF2-Pad26)": [
+        "metering_block"
+      ],
+      "unconnected-(U2-CF3-Pad27)": [
+        "metering_block"
+      ],
+      "unconnected-(U2-CF4-Pad28)": [
+        "metering_block"
+      ],
+      "unconnected-(U2-IRQ0-Pad30)": [
+        "metering_block"
+      ],
+      "unconnected-(U2-IRQ1-Pad31)": [
+        "metering_block"
+      ],
+      "unconnected-(U2-WARNOUT-Pad29)": [
+        "metering_block"
+      ],
+      "unconnected-(U2-ZX0-Pad22)": [
+        "metering_block"
+      ],
+      "unconnected-(U2-ZX1-Pad23)": [
+        "metering_block"
+      ],
+      "unconnected-(U2-ZX2-Pad24)": [
+        "metering_block"
+      ],
+      "unconnected-(U3-CF1-Pad25)": [
+        "metering_block"
+      ],
+      "unconnected-(U3-CF2-Pad26)": [
+        "metering_block"
+      ],
+      "unconnected-(U3-CF3-Pad27)": [
+        "metering_block"
+      ],
+      "unconnected-(U3-CF4-Pad28)": [
+        "metering_block"
+      ],
+      "unconnected-(U3-IRQ0-Pad30)": [
+        "metering_block"
+      ],
+      "unconnected-(U3-IRQ1-Pad31)": [
+        "metering_block"
+      ],
+      "unconnected-(U3-WARNOUT-Pad29)": [
+        "metering_block"
+      ],
+      "unconnected-(U3-ZX0-Pad22)": [
+        "metering_block"
+      ],
+      "unconnected-(U3-ZX1-Pad23)": [
+        "metering_block"
+      ],
+      "unconnected-(U3-ZX2-Pad24)": [
+        "metering_block"
+      ],
+      "unconnected-(U4-CF1-Pad25)": [
+        "metering_block"
+      ],
+      "unconnected-(U4-CF2-Pad26)": [
+        "metering_block"
+      ],
+      "unconnected-(U4-CF3-Pad27)": [
+        "metering_block"
+      ],
+      "unconnected-(U4-CF4-Pad28)": [
+        "metering_block"
+      ],
+      "unconnected-(U4-IRQ0-Pad30)": [
+        "metering_block"
+      ],
+      "unconnected-(U4-IRQ1-Pad31)": [
+        "metering_block"
+      ],
+      "unconnected-(U4-WARNOUT-Pad29)": [
+        "metering_block"
+      ],
+      "unconnected-(U4-ZX0-Pad22)": [
+        "metering_block"
+      ],
+      "unconnected-(U4-ZX1-Pad23)": [
+        "metering_block"
+      ],
+      "unconnected-(U4-ZX2-Pad24)": [
+        "metering_block"
+      ],
+      "unconnected-(U5-CF1-Pad25)": [
+        "metering_block"
+      ],
+      "unconnected-(U5-CF2-Pad26)": [
+        "metering_block"
+      ],
+      "unconnected-(U5-CF3-Pad27)": [
+        "metering_block"
+      ],
+      "unconnected-(U5-CF4-Pad28)": [
+        "metering_block"
+      ],
+      "unconnected-(U5-IRQ0-Pad30)": [
+        "metering_block"
+      ],
+      "unconnected-(U5-IRQ1-Pad31)": [
+        "metering_block"
+      ],
+      "unconnected-(U5-WARNOUT-Pad29)": [
+        "metering_block"
+      ],
+      "unconnected-(U5-ZX0-Pad22)": [
+        "metering_block"
+      ],
+      "unconnected-(U5-ZX1-Pad23)": [
+        "metering_block"
+      ],
+      "unconnected-(U5-ZX2-Pad24)": [
+        "metering_block"
+      ]
+    },
+    "netclass_patterns": [
+      {
+        "netclass": "Default",
+        "pattern": "/HV*"
+      },
+      {
+        "netclass": "Default",
+        "pattern": "/L*"
+      }
+    ]
   },
   "pcbnew": {
     "last_paths": {
@@ -498,6 +951,10 @@
   },
   "schematic": {
     "annotate_start_num": 0,
+    "annotation": {
+      "method": 0,
+      "sort_order": 0
+    },
     "bom_export_filename": "${PROJECTNAME}.csv",
     "bom_fmt_presets": [],
     "bom_fmt_settings": {
@@ -650,6 +1107,42 @@
           "label": "#",
           "name": "${ITEM_NUMBER}",
           "show": false
+        },
+        {
+          "group_by": false,
+          "label": "Sim.Params",
+          "name": "Sim.Params",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "Sim.Library",
+          "name": "Sim.Library",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "Sim.Name",
+          "name": "Sim.Name",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "Purchase-URL",
+          "name": "Purchase-URL",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "KLC_S3.3",
+          "name": "KLC_S3.3",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "KLC_S4.1",
+          "name": "KLC_S4.1",
+          "show": false
         }
       ],
       "filter_string": "",
@@ -659,6 +1152,7 @@
       "sort_asc": true,
       "sort_field": "Reference"
     },
+    "bus_aliases": {},
     "connection_grid_size": 50.0,
     "drawing": {
       "dashed_lines_dash_length_ratio": 12.0,
@@ -666,6 +1160,7 @@
       "default_line_thickness": 6.0,
       "default_text_size": 50.0,
       "field_names": [],
+      "hop_over_size_choice": 0,
       "intersheets_ref_own_page": false,
       "intersheets_ref_prefix": "",
       "intersheets_ref_short": false,
@@ -687,8 +1182,17 @@
       "version": 1
     },
     "net_format_name": "",
+    "ngspice": {
+      "fix_include_paths": true,
+      "meta": {
+        "version": 0
+      },
+      "model_mode": 4,
+      "workbook_filename": ""
+    },
     "page_layout_descr_file": "",
     "plot_directory": "",
+    "reuse_designators": true,
     "space_save_all_events": true,
     "spice_current_sheet_as_root": false,
     "spice_external_command": "spice \"%I\"",
@@ -697,13 +1201,56 @@
     "spice_save_all_dissipations": false,
     "spice_save_all_voltages": false,
     "subpart_first_id": 65,
-    "subpart_id_separator": 0
+    "subpart_id_separator": 0,
+    "top_level_sheets": [
+      {
+        "filename": "mainboard.kicad_sch",
+        "name": "mainboard",
+        "uuid": "bd2959d4-1d7f-4087-9bcc-1f93cdea81d8"
+      }
+    ],
+    "used_designators": "SW1-2,RV1-3,J1-14,Y1-9,#PWR1-81,TP1-11,R1-112,R119-121,F1-3,U1-7,C1-92,D1-4",
+    "variants": []
   },
   "sheets": [
     [
       "bd2959d4-1d7f-4087-9bcc-1f93cdea81d8",
-      "Root"
+      "mainboard"
+    ],
+    [
+      "d6cb0105-0e9c-4c92-8a0b-4c62d6ce5cef",
+      "metering_block"
+    ],
+    [
+      "22a2bc33-f401-4b96-a70b-18bf3f9d1b14",
+      "voltage_divider"
+    ],
+    [
+      "70ee7e10-bc11-4a58-98ee-d78abc22fb0e",
+      "metering_block1"
+    ],
+    [
+      "467c1084-071b-48ca-97bb-49335cce99d0",
+      "metering_block2"
+    ],
+    [
+      "48f966c4-dc8c-4470-a064-6b6a757ebe55",
+      "metering_block3"
+    ],
+    [
+      "13d82ce1-1127-4798-a76b-e9dda1343de0",
+      "voltage_divider1"
+    ],
+    [
+      "62c9120c-7fcb-4246-b07d-61704535a91a",
+      "voltage_divider2"
     ]
   ],
-  "text_variables": {}
+  "text_variables": {},
+  "tuning_profiles": {
+    "meta": {
+      "version": 0
+    },
+    "tuning_profiles_impedance_geometric": []
+  }
 }
