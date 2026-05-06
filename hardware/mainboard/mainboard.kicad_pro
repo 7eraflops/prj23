@@ -1209,7 +1209,7 @@
         "uuid": "bd2959d4-1d7f-4087-9bcc-1f93cdea81d8"
       }
     ],
-    "used_designators": "L1-2,SW1-2,RV1-3,J1-14,Y1-9,#PWR1-81,TP1-11,R1-112,R119-121,F1-3,U1-7,C1-92,D1-6",
+    "used_designators": "#PWR1,#PWR66,U8,D4,L3",
     "variants": []
   },
   "sheets": [
