@@ -49,6 +49,10 @@ hardware/**/gerbers/
 *.rpt
 *.csv
 
+# KiCad working directories
+hardware/**/.history/
+hardware/**/fabrication_files/
+
 # =========================
 # ESP-IDF / C++ (Firmware)
 # =========================
