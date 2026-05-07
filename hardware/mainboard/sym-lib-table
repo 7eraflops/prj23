@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "ATM90E32AS-AU-R")(type "KiCad")(uri "/home/teraflops/Downloads/ATM90E32AS-AU-R/ATM90E32AS-AU-R.kicad_sym")(options "")(descr ""))
+)
