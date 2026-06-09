@@ -93,11 +93,13 @@ void ATM90E32Sensor::update() {
             continue;
         }
 
+        atm90e32::LineInput current_input = map.input;
+
         ChannelPhase phase = _config_manager.get_channel_phase(channel);
-        atm90e32::LineInput requested_input = phase_to_input(phase, map.input);
+        atm90e32::LineInput voltage_input = phase_to_input(phase, map.input);
 
         atm90e32::DeviceReading reading;
-        const esp_err_t err = _devices[map.chip_index].read_line(requested_input, reading);
+        esp_err_t err = _devices[map.chip_index].read_line(current_input, reading);
         if (err != ESP_OK) {
             ESP_LOGW(TAG, "Read failed for channel %d (chip %u): %s", channel,
                      static_cast<unsigned>(map.chip_index), esp_err_to_name(err));
@@ -105,7 +107,15 @@ void ATM90E32Sensor::update() {
             continue;
         }
 
-        _line_cache[map.chip_index][static_cast<int>(requested_input)] = reading;
+        if (voltage_input != current_input) {
+            float phase_voltage = 0.0F;
+            err = _devices[map.chip_index].read_line_voltage(voltage_input, phase_voltage);
+            if (err == ESP_OK) {
+                reading.voltage = phase_voltage;
+            }
+        }
+
+        _line_cache[map.chip_index][static_cast<int>(current_input)] = reading;
 
         AppConfig::ChannelCalibration calibration = _config_manager.get_channel_calibration(channel);
 

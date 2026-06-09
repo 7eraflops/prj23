@@ -246,6 +246,19 @@ esp_err_t Device::read_line(LineInput input, DeviceReading& out) {
     return ESP_OK;
 }
 
+esp_err_t Device::read_line_voltage(LineInput input, float& voltage) {
+    const LineRegisters regs = line_registers(input);
+    uint16_t raw = 0;
+    const esp_err_t err = read_instant(regs.voltage, raw);
+    if (err != ESP_OK) {
+        mark_read_error();
+        return err;
+    }
+    mark_ok();
+    voltage = static_cast<float>(raw) * VOLTAGE_SCALE;
+    return ESP_OK;
+}
+
 const DeviceHealth& Device::health() const {
     return _health;
 }

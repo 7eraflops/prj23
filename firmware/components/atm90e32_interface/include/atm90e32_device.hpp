@@ -50,6 +50,7 @@ public:
     esp_err_t init(const DeviceConfig& cfg);
     esp_err_t verify_comm();
     esp_err_t read_line(LineInput input, DeviceReading& out);
+    esp_err_t read_line_voltage(LineInput input, float& voltage);
 
     const DeviceHealth& health() const;
 
