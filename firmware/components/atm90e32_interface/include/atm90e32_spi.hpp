@@ -12,10 +12,10 @@ namespace atm90e32 {
 
 struct SpiBusConfig {
     spi_host_device_t host = SPI2_HOST;
-    int sclk_gpio = 12;
-    int miso_gpio = 13;
-    int mosi_gpio = 11;
-    std::array<int, 4> cs_gpios = {10, 9, 8, 7};
+    int sclk_gpio = 17;
+    int miso_gpio = 16;
+    int mosi_gpio = 15;
+    std::array<int, 4> cs_gpios = {9, 10, 11, 12};
     int clock_hz = 200000;
 };
 
