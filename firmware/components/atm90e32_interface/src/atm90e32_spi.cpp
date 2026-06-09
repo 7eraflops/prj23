@@ -79,9 +79,6 @@ esp_err_t SpiTransport::transfer16(std::size_t chip_index, bool is_read, uint16_
         reg_frame &= static_cast<uint16_t>(~0x8000);
     }
 
-    reg_frame = static_cast<uint16_t>((reg_frame >> 8) | (reg_frame << 8));
-    tx_value = static_cast<uint16_t>((tx_value >> 8) | (tx_value << 8));
-
     spi_transaction_t t = {};
     t.length = 32;
     uint8_t tx_buffer[4] = {
@@ -100,8 +97,7 @@ esp_err_t SpiTransport::transfer16(std::size_t chip_index, bool is_read, uint16_
         return err;
     }
 
-    uint16_t rx_raw = static_cast<uint16_t>((rx_buffer[2] << 8) | rx_buffer[3]);
-    rx_value = static_cast<uint16_t>((rx_raw >> 8) | (rx_raw << 8));
+    rx_value = static_cast<uint16_t>((rx_buffer[2] << 8) | rx_buffer[3]);
     return ESP_OK;
 }
 
