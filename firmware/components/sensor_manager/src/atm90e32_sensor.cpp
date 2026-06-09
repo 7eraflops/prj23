@@ -22,12 +22,12 @@ bool ATM90E32Sensor::init() {
     }
 
     atm90e32::DeviceConfig device_cfg;
-    device_cfg.line_freq_mode = 0x0087;
+    device_cfg.line_freq_mode = 0x0185;
     device_cfg.pga_gain = 0x0000;
-    device_cfg.voltage_gain = 0x0000;
-    device_cfg.current_gain_a = 0x0000;
-    device_cfg.current_gain_b = 0x0000;
-    device_cfg.current_gain_c = 0x0000;
+    device_cfg.voltage_gain = 0xC7CE;
+    device_cfg.current_gain_a = 0x27A4;
+    device_cfg.current_gain_b = 0x27A4;
+    device_cfg.current_gain_c = 0x27A4;
 
     bool any_ok = false;
     for (auto& device : _devices) {

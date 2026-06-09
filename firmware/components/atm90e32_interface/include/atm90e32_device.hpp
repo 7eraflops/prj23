@@ -28,7 +28,7 @@ struct DeviceReading {
 };
 
 struct DeviceConfig {
-    uint16_t line_freq_mode = 0x0861;
+    uint16_t line_freq_mode = 0x0185;
     uint16_t pga_gain = 0x0000;
     uint16_t voltage_gain = 0x0000;
     uint16_t current_gain_a = 0x0000;
