@@ -176,12 +176,12 @@ void CommandHandler::handle_channel(int channel, const std::string& payload) {
 
 void CommandHandler::handle_phase(int channel, const std::string& payload) {
     ChannelPhase phase;
-    if (payload == "Phase A" || payload == "A" || payload == "1") {
-        phase = ChannelPhase::PHASE_A;
-    } else if (payload == "Phase B" || payload == "B" || payload == "2") {
-        phase = ChannelPhase::PHASE_B;
-    } else if (payload == "Phase C" || payload == "C" || payload == "3") {
-        phase = ChannelPhase::PHASE_C;
+    if (payload == "L1" || payload == "A" || payload == "1") {
+        phase = ChannelPhase::PHASE_L1;
+    } else if (payload == "L2" || payload == "B" || payload == "2") {
+        phase = ChannelPhase::PHASE_L2;
+    } else if (payload == "L3" || payload == "C" || payload == "3") {
+        phase = ChannelPhase::PHASE_L3;
     } else {
         phase = ChannelPhase::NONE;
     }
@@ -206,14 +206,14 @@ void CommandHandler::publish_phase_state(int channel) {
     ChannelPhase phase = _config.get_channel_phase(channel);
     const char* phase_str;
     switch (phase) {
-    case ChannelPhase::PHASE_A:
-        phase_str = "Phase A";
+    case ChannelPhase::PHASE_L1:
+        phase_str = "L1";
         break;
-    case ChannelPhase::PHASE_B:
-        phase_str = "Phase B";
+    case ChannelPhase::PHASE_L2:
+        phase_str = "L2";
         break;
-    case ChannelPhase::PHASE_C:
-        phase_str = "Phase C";
+    case ChannelPhase::PHASE_L3:
+        phase_str = "L3";
         break;
     default:
         phase_str = "None";
