@@ -72,12 +72,12 @@ ATM90E32Sensor::ChannelMap ATM90E32Sensor::map_channel(int channel) const {
 atm90e32::LineInput ATM90E32Sensor::phase_to_input(ChannelPhase phase,
                                                     atm90e32::LineInput fallback) const {
     switch (phase) {
-    case ChannelPhase::PHASE_A:
-        return atm90e32::LineInput::A;
-    case ChannelPhase::PHASE_B:
-        return atm90e32::LineInput::B;
-    case ChannelPhase::PHASE_C:
+    case ChannelPhase::PHASE_L1:
         return atm90e32::LineInput::C;
+    case ChannelPhase::PHASE_L2:
+        return atm90e32::LineInput::B;
+    case ChannelPhase::PHASE_L3:
+        return atm90e32::LineInput::A;
     case ChannelPhase::NONE:
     default:
         return fallback;

@@ -162,7 +162,7 @@ void HaDiscovery::publish_control_entities(int num_channels) {
         snprintf(name_buf, sizeof(name_buf), "Channel %d Phase", i + 1);
         publish_select_entity(name_buf, "energy_meter/cmnd/phase/" + std::to_string(i),
                               "energy_meter/stat/phase/" + std::to_string(i),
-                              "Phase A,Phase B,Phase C,None", "mdi:alpha-p-circle");
+                              "L1,L2,L3,None", "mdi:alpha-p-circle");
         vTaskDelay(pdMS_TO_TICKS(10));
     }
 

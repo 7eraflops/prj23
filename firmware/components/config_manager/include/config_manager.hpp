@@ -8,9 +8,9 @@ static constexpr uint16_t NUM_CHANNELS = 12;
 
 enum class ChannelPhase : uint8_t {
     NONE = 0,
-    PHASE_A = 1,
-    PHASE_B = 2,
-    PHASE_C = 3
+    PHASE_L1 = 1,
+    PHASE_L2 = 2,
+    PHASE_L3 = 3
 };
 
 /**
@@ -37,11 +37,11 @@ struct AppConfig {
     AppConfig() {
         for (int i = 0; i < NUM_CHANNELS; ++i) {
             if (i < 4) {
-                channel_phases[i] = ChannelPhase::PHASE_A;
+                channel_phases[i] = ChannelPhase::PHASE_L1;
             } else if (i < 8) {
-                channel_phases[i] = ChannelPhase::PHASE_B;
+                channel_phases[i] = ChannelPhase::PHASE_L2;
             } else {
-                channel_phases[i] = ChannelPhase::PHASE_C;
+                channel_phases[i] = ChannelPhase::PHASE_L3;
             }
         }
     }
