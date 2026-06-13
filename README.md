@@ -71,7 +71,7 @@ A custom ESP32-based energy meter measuring up to 12 channels across a 3-phase s
   - Subscribe to command topics in `mqtt_manager` and execute device actions.
 - [x] **Calibration Storage Groundwork**
   - Add NVS fields in `config_manager` for per-channel calibration settings.
-- [ ] **Calibration Web UI**
+- [X] **Calibration Web UI**
   - Add a `/calibration` web page to view and edit multipliers dynamically.
 
 ### Phase 3: Hardware Driver Preparation (In Progress)
@@ -93,7 +93,7 @@ A custom ESP32-based energy meter measuring up to 12 channels across a 3-phase s
 ### Phase 4: Hardware Bring-Up & Validation
 *Goal: Validate the custom PCB and physically calibrate the sensors.*
 
-- [ ] **Physical Bring-Up**
+- [X] **Physical Bring-Up**
   - Solder and power the PCB.
   - Validate SPI communication (e.g., read ATM90E32AS status/identity paths).
 - [ ] **Live Calibration**
