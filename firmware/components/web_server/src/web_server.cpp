@@ -25,6 +25,220 @@ static httpd_handle_t server = nullptr;
 static WifiManager* g_wifi = nullptr;
 static ConfigManager* g_config = nullptr;
 
+static void add_calibration_data_to_json(cJSON* root, const AppConfig::CalibrationData& cal) {
+    auto add_arr = [&](const char* name, const auto* arr, int count) {
+        cJSON* a = cJSON_CreateArray();
+        for (int i = 0; i < count; ++i) {
+            cJSON_AddItemToArray(a, cJSON_CreateNumber(static_cast<double>(arr[i])));
+        }
+        cJSON_AddItemToObject(root, name, a);
+    };
+
+    cJSON_AddBoolToObject(root, "line_freq_50hz", cal.line_freq_50hz);
+    cJSON_AddNumberToObject(root, "pga_gain_mode", cal.pga_gain_mode);
+
+    add_arr("voltage_gain", cal.u_gain, 3);
+    add_arr("voltage_offset", cal.u_offset, 3);
+    add_arr("current_gain", cal.i_gain, 12);
+    add_arr("current_offset", cal.i_offset, 12);
+    add_arr("active_power_offset", cal.p_offset, 3);
+    add_arr("reactive_power_offset", cal.q_offset, 3);
+    add_arr("power_gain", cal.pq_gain, 3);
+    add_arr("phase_angle", cal.phi, 12);
+
+    // Advanced
+    cJSON_AddNumberToObject(root, "power_constant_h", cal.pl_const_h);
+    cJSON_AddNumberToObject(root, "power_constant_l", cal.pl_const_l);
+    cJSON_AddNumberToObject(root, "p_start_th", cal.p_start_th);
+    cJSON_AddNumberToObject(root, "q_start_th", cal.q_start_th);
+    cJSON_AddNumberToObject(root, "s_start_th", cal.s_start_th);
+    cJSON_AddNumberToObject(root, "p_phase_th", cal.p_phase_th);
+    cJSON_AddNumberToObject(root, "q_phase_th", cal.q_phase_th);
+    cJSON_AddNumberToObject(root, "s_phase_th", cal.s_phase_th);
+}
+
+static esp_err_t api_calibration_get_handler(httpd_req_t* req) {
+    if (!g_config) {
+        httpd_resp_send_500(req);
+        return ESP_FAIL;
+    }
+
+    const AppConfig& cfg = g_config->get_config();
+    cJSON* root = cJSON_CreateObject();
+
+    cJSON* hw = cJSON_CreateObject();
+    add_calibration_data_to_json(hw, cfg.calibration_data);
+    cJSON_AddItemToObject(root, "hardware", hw);
+
+    cJSON* channels = cJSON_CreateArray();
+    for (int i = 0; i < NUM_CHANNELS; ++i) {
+        cJSON* ch = cJSON_CreateObject();
+        cJSON_AddNumberToObject(ch, "energy_offset_kwh", cfg.channel_calibration[i].energy_offset_kwh);
+        cJSON_AddItemToArray(channels, ch);
+    }
+    cJSON_AddItemToObject(root, "channels", channels);
+
+    const char* json_str = cJSON_PrintUnformatted(root);
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, json_str, strlen(json_str));
+
+    free((void*)json_str);
+    cJSON_Delete(root);
+    return ESP_OK;
+}
+
+static bool read_calibration_data_from_json(cJSON* root, AppConfig::CalibrationData& cal) {
+    auto read_bool = [&](const char* key, bool& out) -> bool {
+        cJSON* item = cJSON_GetObjectItem(root, key);
+        if (cJSON_IsBool(item)) {
+            out = cJSON_IsTrue(item);
+            return true;
+        }
+        return false;
+    };
+
+    auto read_uint8 = [&](const char* key, uint8_t& out) -> bool {
+        cJSON* item = cJSON_GetObjectItem(root, key);
+        if (cJSON_IsNumber(item)) {
+            out = static_cast<uint8_t>(item->valuedouble);
+            return true;
+        }
+        return false;
+    };
+
+    auto read_uint16 = [&](const char* key, uint16_t& out) -> bool {
+        cJSON* item = cJSON_GetObjectItem(root, key);
+        if (cJSON_IsNumber(item)) {
+            out = static_cast<uint16_t>(item->valuedouble);
+            return true;
+        }
+        return false;
+    };
+
+    auto read_int16 = [&](const char* key, int16_t& out) -> bool {
+        cJSON* item = cJSON_GetObjectItem(root, key);
+        if (cJSON_IsNumber(item)) {
+            out = static_cast<int16_t>(item->valuedouble);
+            return true;
+        }
+        return false;
+    };
+
+    auto read_arr = [&](const char* name, auto* arr, int count, auto reader) -> bool {
+        cJSON* a = cJSON_GetObjectItem(root, name);
+        if (!cJSON_IsArray(a)) return false;
+        int idx = 0;
+        cJSON* el;
+        cJSON_ArrayForEach(el, a) {
+            if (idx >= count) break;
+            if (cJSON_IsNumber(el)) {
+                reader(el, arr[idx]);
+            }
+            ++idx;
+        }
+        return true;
+    };
+
+    auto read_uint16_from_json = [](cJSON* el, uint16_t& out) { out = static_cast<uint16_t>(el->valuedouble); };
+    auto read_int16_from_json = [](cJSON* el, int16_t& out) { out = static_cast<int16_t>(el->valuedouble); };
+
+    read_bool("line_freq_50hz", cal.line_freq_50hz);
+    read_uint8("pga_gain_mode", cal.pga_gain_mode);
+
+    read_arr("voltage_gain", cal.u_gain, 3, read_uint16_from_json);
+    read_arr("voltage_offset", cal.u_offset, 3, read_int16_from_json);
+    read_arr("current_gain", cal.i_gain, 12, read_uint16_from_json);
+    read_arr("current_offset", cal.i_offset, 12, read_int16_from_json);
+    read_arr("active_power_offset", cal.p_offset, 3, read_int16_from_json);
+    read_arr("reactive_power_offset", cal.q_offset, 3, read_int16_from_json);
+    read_arr("power_gain", cal.pq_gain, 3, read_uint16_from_json);
+    read_arr("phase_angle", cal.phi, 12, read_int16_from_json);
+
+    read_uint16("power_constant_h", cal.pl_const_h);
+    read_uint16("power_constant_l", cal.pl_const_l);
+    read_uint16("p_start_th", cal.p_start_th);
+    read_uint16("q_start_th", cal.q_start_th);
+    read_uint16("s_start_th", cal.s_start_th);
+    read_uint16("p_phase_th", cal.p_phase_th);
+    read_uint16("q_phase_th", cal.q_phase_th);
+    read_uint16("s_phase_th", cal.s_phase_th);
+
+    return true;
+}
+
+static esp_err_t api_calibration_put_handler(httpd_req_t* req) {
+    if (!g_config) {
+        httpd_resp_send_500(req);
+        return ESP_FAIL;
+    }
+
+    int total_len = req->content_len;
+    if (total_len >= 8192) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Payload too large");
+        return ESP_FAIL;
+    }
+
+    char* buf = (char*)malloc(total_len + 1);
+    if (!buf) {
+        httpd_resp_send_500(req);
+        return ESP_FAIL;
+    }
+
+    int received = 0;
+    while (received < total_len) {
+        int ret = httpd_req_recv(req, buf + received, total_len - received);
+        if (ret <= 0) {
+            if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
+                httpd_resp_send_408(req);
+            }
+            free(buf);
+            return ESP_FAIL;
+        }
+        received += ret;
+    }
+    buf[total_len] = '\0';
+
+    cJSON* root = cJSON_Parse(buf);
+    free(buf);
+
+    if (!root) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid JSON");
+        return ESP_FAIL;
+    }
+
+    AppConfig cfg = g_config->get_config();
+
+    cJSON* hw = cJSON_GetObjectItem(root, "hardware");
+    if (cJSON_IsObject(hw)) {
+        read_calibration_data_from_json(hw, cfg.calibration_data);
+    }
+
+    cJSON* channels = cJSON_GetObjectItem(root, "channels");
+    if (cJSON_IsArray(channels)) {
+        int idx = 0;
+        cJSON* ch;
+        cJSON_ArrayForEach(ch, channels) {
+            if (idx >= NUM_CHANNELS) break;
+            if (cJSON_IsObject(ch)) {
+                cJSON* eo = cJSON_GetObjectItem(ch, "energy_offset_kwh");
+                if (cJSON_IsNumber(eo))
+                    cfg.channel_calibration[idx].energy_offset_kwh = eo->valuedouble;
+            }
+            ++idx;
+        }
+    }
+
+    cJSON_Delete(root);
+
+    g_config->set_config(cfg);
+    g_config->save();
+
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, "{\"status\":\"ok\"}", -1);
+
+    return ESP_OK;
+}
+
 static esp_err_t index_get_handler(httpd_req_t* req) {
     httpd_resp_set_type(req, "text/html");
     const size_t len = index_html_end - index_html_start;
@@ -330,7 +544,7 @@ esp_err_t start(WifiManager& wifi, ConfigManager& config) {
     g_config = &config;
 
     httpd_config_t server_config = HTTPD_DEFAULT_CONFIG();
-    server_config.max_uri_handlers = 10;
+    server_config.max_uri_handlers = 12;
     server_config.uri_match_fn = httpd_uri_match_wildcard;
 
     ESP_LOGI(TAG, "Starting web server on port: '%d'", server_config.server_port);
@@ -383,6 +597,18 @@ esp_err_t start(WifiManager& wifi, ConfigManager& config) {
                                   .handler = api_ota_update_post_handler,
                                   .user_ctx = NULL};
     httpd_register_uri_handler(server, &ota_update_uri);
+
+    httpd_uri_t cal_get_uri = {.uri = "/api/calibration",
+                               .method = HTTP_GET,
+                               .handler = api_calibration_get_handler,
+                               .user_ctx = NULL};
+    httpd_register_uri_handler(server, &cal_get_uri);
+
+    httpd_uri_t cal_put_uri = {.uri = "/api/calibration",
+                               .method = HTTP_PUT,
+                               .handler = api_calibration_put_handler,
+                               .user_ctx = NULL};
+    httpd_register_uri_handler(server, &cal_put_uri);
 
     return ESP_OK;
 }

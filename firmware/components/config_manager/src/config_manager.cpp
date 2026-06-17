@@ -155,6 +155,7 @@ esp_err_t ConfigManager::load() {
     load_u16("ch_active", _config.channel_active_mask);
     load_channel_settings();
     load_calibration_settings();
+    load_hardware_calibration();
 
     return ESP_OK;
 }
@@ -203,6 +204,10 @@ esp_err_t ConfigManager::save() {
         if (err != ESP_OK)
             return err;
     }
+
+    err = save_blob("hw_cal", &_config.calibration_data, sizeof(_config.calibration_data));
+    if (err != ESP_OK)
+        return err;
 
     return ESP_OK;
 }
@@ -336,4 +341,27 @@ void ConfigManager::load_calibration_settings() {
             _config.channel_calibration[i] = calibration;
         }
     }
+}
+
+void ConfigManager::load_hardware_calibration() {
+    AppConfig::CalibrationData data{};
+    const esp_err_t err = load_blob("hw_cal", &data, sizeof(data));
+    if (err == ESP_OK) {
+        _config.calibration_data = data;
+    }
+}
+
+const AppConfig::CalibrationData& ConfigManager::get_calibration_data() const {
+    std::lock_guard<std::mutex> lock(_mtx);
+    return _config.calibration_data;
+}
+
+void ConfigManager::set_calibration_data(const AppConfig::CalibrationData& data) {
+    std::lock_guard<std::mutex> lock(_mtx);
+    _config.calibration_data = data;
+}
+
+void ConfigManager::save_hardware_calibration() {
+    std::lock_guard<std::mutex> lock(_mtx);
+    save_blob("hw_cal", &_config.calibration_data, sizeof(_config.calibration_data));
 }

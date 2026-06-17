@@ -1,5 +1,7 @@
 #include "atm90e32_device.hpp"
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include <esp_log.h>
 #include <esp_timer.h>
 
@@ -101,6 +103,8 @@ esp_err_t Device::init(const DeviceConfig& cfg) {
     if (err != ESP_OK)
         return err;
 
+    vTaskDelay(pdMS_TO_TICKS(50));
+
     err = write_status(reg::StatusControl::CFG_REG_ACC_EN, ATM90E32_CONFIG_UNLOCK_MAGIC);
     if (err != ESP_OK)
         return err;
@@ -109,10 +113,25 @@ esp_err_t Device::init(const DeviceConfig& cfg) {
     if (err != ESP_OK)
         return err;
 
-    err = write_cfg(reg::CalibrationConfig::PL_CONST_H, 0x0861);
+    // Only the voltage labels (L1, L2, L3) are reversed on the PCB, current CTs are not.
+    // L1 is physically connected to Line C (U2)
+    // L2 is physically connected to Line B (U1)
+    // L3 is physically connected to Line A (U0)
+    // Restore default mapping for currents so CT1 stays with Logical Phase A:
+    // ChannelMapI (0x01): Phase C (I2), Phase B (I1), Phase A (I0) -> 0x0210
+    err = write_status(reg::StatusControl::CHANNEL_MAP_I, 0x0210);
     if (err != ESP_OK)
         return err;
-    err = write_cfg(reg::CalibrationConfig::PL_CONST_L, 0xC468);
+
+    // ChannelMapU (0x02): Phase C (U0), Phase B (U1), Phase A (U2) -> 0x0456
+    err = write_status(reg::StatusControl::CHANNEL_MAP_U, 0x0456);
+    if (err != ESP_OK)
+        return err;
+
+    err = write_cfg(reg::CalibrationConfig::PL_CONST_H, cfg.pl_const_h);
+    if (err != ESP_OK)
+        return err;
+    err = write_cfg(reg::CalibrationConfig::PL_CONST_L, cfg.pl_const_l);
     if (err != ESP_OK)
         return err;
 
@@ -123,22 +142,144 @@ esp_err_t Device::init(const DeviceConfig& cfg) {
     if (err != ESP_OK)
         return err;
 
-    err = write_cfg(reg::CalibrationConfig::U_GAIN_A, cfg.voltage_gain);
+    err = write_cfg(reg::CalibrationConfig::P_START_TH, cfg.p_start_th);
     if (err != ESP_OK)
         return err;
-    err = write_cfg(reg::CalibrationConfig::I_GAIN_A, cfg.current_gain_a);
+    err = write_cfg(reg::CalibrationConfig::Q_START_TH, cfg.q_start_th);
     if (err != ESP_OK)
         return err;
-    err = write_cfg(reg::CalibrationConfig::U_GAIN_B, cfg.voltage_gain);
+    err = write_cfg(reg::CalibrationConfig::S_START_TH, cfg.s_start_th);
     if (err != ESP_OK)
         return err;
-    err = write_cfg(reg::CalibrationConfig::I_GAIN_B, cfg.current_gain_b);
+    err = write_cfg(reg::CalibrationConfig::P_PHASE_TH, cfg.p_phase_th);
     if (err != ESP_OK)
         return err;
-    err = write_cfg(reg::CalibrationConfig::U_GAIN_C, cfg.voltage_gain);
+    err = write_cfg(reg::CalibrationConfig::Q_PHASE_TH, cfg.q_phase_th);
     if (err != ESP_OK)
         return err;
-    err = write_cfg(reg::CalibrationConfig::I_GAIN_C, cfg.current_gain_c);
+    err = write_cfg(reg::CalibrationConfig::S_PHASE_TH, cfg.s_phase_th);
+    if (err != ESP_OK)
+        return err;
+
+    uint16_t cs1 = 0;
+    cs1 += cfg.pl_const_h;
+    cs1 += cfg.pl_const_l;
+    cs1 += cfg.line_freq_mode;
+    cs1 += cfg.pga_gain;
+    cs1 += cfg.p_start_th;
+    cs1 += cfg.q_start_th;
+    cs1 += cfg.s_start_th;
+    cs1 += cfg.p_phase_th;
+    cs1 += cfg.q_phase_th;
+    cs1 += cfg.s_phase_th;
+    err = write_cfg(reg::CalibrationConfig::CS1, cs1);
+    if (err != ESP_OK)
+        return err;
+
+    err = write_cfg(reg::CalibrationConfig::P_OFFSET_A, static_cast<uint16_t>(cfg.p_offset[0]));
+    if (err != ESP_OK)
+        return err;
+    err = write_cfg(reg::CalibrationConfig::Q_OFFSET_A, static_cast<uint16_t>(cfg.q_offset[0]));
+    if (err != ESP_OK)
+        return err;
+    err = write_cfg(reg::CalibrationConfig::P_OFFSET_B, static_cast<uint16_t>(cfg.p_offset[1]));
+    if (err != ESP_OK)
+        return err;
+    err = write_cfg(reg::CalibrationConfig::Q_OFFSET_B, static_cast<uint16_t>(cfg.q_offset[1]));
+    if (err != ESP_OK)
+        return err;
+    err = write_cfg(reg::CalibrationConfig::P_OFFSET_C, static_cast<uint16_t>(cfg.p_offset[2]));
+    if (err != ESP_OK)
+        return err;
+    err = write_cfg(reg::CalibrationConfig::Q_OFFSET_C, static_cast<uint16_t>(cfg.q_offset[2]));
+    if (err != ESP_OK)
+        return err;
+
+    err = write_cfg(reg::CalibrationConfig::PQ_GAIN_A, cfg.pq_gain[0]);
+    if (err != ESP_OK)
+        return err;
+
+    uint16_t phi_reg[3] = {0, 0, 0};
+    for (int i = 0; i < 3; ++i) {
+        if (cfg.phi[i] < 0) {
+            phi_reg[i] = (1 << 15) | ((-cfg.phi[i]) & 0xFF);
+        } else {
+            phi_reg[i] = (cfg.phi[i] & 0xFF);
+        }
+    }
+
+    err = write_cfg(reg::CalibrationConfig::PHI_A, phi_reg[0]);
+    if (err != ESP_OK)
+        return err;
+    err = write_cfg(reg::CalibrationConfig::PQ_GAIN_B, cfg.pq_gain[1]);
+    if (err != ESP_OK)
+        return err;
+    err = write_cfg(reg::CalibrationConfig::PHI_B, phi_reg[1]);
+    if (err != ESP_OK)
+        return err;
+    err = write_cfg(reg::CalibrationConfig::PQ_GAIN_C, cfg.pq_gain[2]);
+    if (err != ESP_OK)
+        return err;
+    err = write_cfg(reg::CalibrationConfig::PHI_C, phi_reg[2]);
+    if (err != ESP_OK)
+        return err;
+
+    err = write_cfg(reg::CalibrationConfig::U_GAIN_A, cfg.voltage_gain[0]);
+    if (err != ESP_OK)
+        return err;
+    err = write_cfg(reg::CalibrationConfig::U_GAIN_B, cfg.voltage_gain[1]);
+    if (err != ESP_OK)
+        return err;
+    err = write_cfg(reg::CalibrationConfig::U_GAIN_C, cfg.voltage_gain[2]);
+    if (err != ESP_OK)
+        return err;
+
+    err = write_cfg(reg::CalibrationConfig::U_OFFSET_A, cfg.voltage_offset[0]);
+    if (err != ESP_OK)
+        return err;
+    err = write_cfg(reg::CalibrationConfig::U_OFFSET_B, cfg.voltage_offset[1]);
+    if (err != ESP_OK)
+        return err;
+    err = write_cfg(reg::CalibrationConfig::U_OFFSET_C, cfg.voltage_offset[2]);
+    if (err != ESP_OK)
+        return err;
+
+    err = write_cfg(reg::CalibrationConfig::I_GAIN_A, cfg.current_gain[0]);
+    if (err != ESP_OK)
+        return err;
+    err = write_cfg(reg::CalibrationConfig::I_GAIN_B, cfg.current_gain[1]);
+    if (err != ESP_OK)
+        return err;
+    err = write_cfg(reg::CalibrationConfig::I_GAIN_C, cfg.current_gain[2]);
+    if (err != ESP_OK)
+        return err;
+
+    err = write_cfg(reg::CalibrationConfig::I_OFFSET_A, cfg.current_offset[0]);
+    if (err != ESP_OK)
+        return err;
+    err = write_cfg(reg::CalibrationConfig::I_OFFSET_B, cfg.current_offset[1]);
+    if (err != ESP_OK)
+        return err;
+    err = write_cfg(reg::CalibrationConfig::I_OFFSET_C, cfg.current_offset[2]);
+    if (err != ESP_OK)
+        return err;
+
+    uint16_t cs2 = 0;
+    for (int i = 0; i < 3; ++i) {
+        cs2 += static_cast<uint16_t>(cfg.p_offset[i]);
+        cs2 += static_cast<uint16_t>(cfg.q_offset[i]);
+    }
+    for (int i = 0; i < 3; ++i) {
+        cs2 += cfg.pq_gain[i];
+        cs2 += phi_reg[i];
+    }
+    for (int i = 0; i < 3; ++i) {
+        cs2 += cfg.voltage_gain[i];
+        cs2 += cfg.current_gain[i];
+        cs2 += cfg.voltage_offset[i];
+        cs2 += cfg.current_offset[i];
+    }
+    err = write_cfg(reg::CalibrationConfig::CS2, cs2);
     if (err != ESP_OK)
         return err;
 

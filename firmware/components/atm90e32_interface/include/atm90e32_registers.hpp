@@ -8,6 +8,8 @@ namespace reg {
 
 enum class StatusControl : uint16_t {
     METER_EN = 0x00,
+    CHANNEL_MAP_I = 0x01,
+    CHANNEL_MAP_U = 0x02,
     SAG_PEAK_DET_CFG = 0x05,
     ZX_CONFIG = 0x07,
     SAG_TH = 0x08,
@@ -37,6 +39,7 @@ enum class CalibrationConfig : uint16_t {
     P_PHASE_TH = 0x38,
     Q_PHASE_TH = 0x39,
     S_PHASE_TH = 0x3A,
+    CS1 = 0x3B,
 
     P_OFFSET_A = 0x41,
     Q_OFFSET_A = 0x42,
@@ -63,6 +66,7 @@ enum class CalibrationConfig : uint16_t {
     I_GAIN_C = 0x6A,
     U_OFFSET_C = 0x6B,
     I_OFFSET_C = 0x6C,
+    CS2 = 0x6D,
 };
 
 enum class Instant : uint16_t {

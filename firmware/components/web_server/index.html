@@ -8,31 +8,35 @@
 body {
   font-family: sans-serif;
   margin: 2rem auto;
-  max-width: 450px;
+  max-width: 650px;
   padding: 0 1rem;
-  background-color: #f4f7f6;
+  background-color: #1a1a1a;
+  color: #e0e0e0;
 }
 .card {
-  background: white;
+  background: #2d2d2d;
   padding: 2rem;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
 }
-h2 { margin-top: 0; color: #333; }
+h2 { margin-top: 0; color: #e0e0e0; }
+p { color: #b0b0b0; }
 nav {
   display: flex;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid #444;
   margin-bottom: 1.5rem;
+  flex-wrap: wrap;
 }
 .tab-btn {
   flex: 1;
+  min-width: 80px;
   padding: 0.8rem;
   background: none;
   border: none;
   border-bottom: 3px solid transparent;
   cursor: pointer;
   font-weight: bold;
-  color: #666;
+  color: #999;
   transition: all 0.2s;
   margin: 0;
   width: auto;
@@ -45,36 +49,41 @@ nav {
   border-top-right-radius: 4px;
 }
 .tab-btn.active {
-  color: #007bff;
-  border-bottom-color: #007bff;
+  color: #4da6ff;
+  border-bottom-color: #4da6ff;
 }
 .tab-btn:hover {
-  background: #007bff;
+  background: #4da6ff;
   color: white;
 }
-/* Ensure active tab hover doesn't have a jarring underline transition */
 .tab-btn.active:hover {
-  background: #007bff;
+  background: #4da6ff;
   color: white;
   border-bottom-color: transparent;
 }
 .tab-btn:disabled {
-  color: #ccc;
+  color: #555;
   cursor: not-allowed;
 }
 label {
   display: block;
   margin-top: 1.2rem;
   font-weight: bold;
-  color: #555;
+  color: #ccc;
 }
 input, select {
   width: 100%;
   padding: 0.6rem;
   margin-top: 0.4rem;
   box-sizing: border-box;
-  border: 1px solid #ddd;
+  border: 1px solid #444;
   border-radius: 4px;
+  background: #3a3a3a;
+  color: #e0e0e0;
+}
+input:focus, select:focus {
+  outline: none;
+  border-color: #4da6ff;
 }
 .row { display: flex; gap: 10px; }
 .row > div { flex: 1; }
@@ -82,7 +91,7 @@ button {
   margin-top: 2rem;
   width: 100%;
   padding: 0.8rem;
-  background: #007bff;
+  background: #4da6ff;
   color: white;
   border: none;
   cursor: pointer;
@@ -90,29 +99,116 @@ button {
   border-radius: 4px;
   transition: background 0.2s;
 }
-button:hover { background: #0056b3; }
-button:disabled { background: #ccc; cursor: not-allowed; }
+button:hover { background: #3388dd; }
+button:disabled { background: #555; cursor: not-allowed; }
 .status {
   margin-bottom: 1.5rem;
   padding: 0.75rem;
   border-radius: 4px;
   display: none;
 }
-.error { background-color: #f8d7da; color: #721c24; display: block; }
-.success { background-color: #d4edda; color: #155724; display: block; }
-.info { background-color: #d1ecf1; color: #0c5460; display: block; }
+.error { background-color: #5c1a1a; color: #ffb3b3; display: block; }
+.success { background-color: #1a4a1a; color: #b3ffb3; display: block; }
+.info { background-color: #1a3a5c; color: #b3d9ff; display: block; }
 .step { display: none; }
 .step.active { display: block; }
 .discovery-item {
   margin-top: 0.5rem;
   padding: 0.5rem;
-  background: #e9ecef;
+  background: #3a3a3a;
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.9rem;
+  color: #ccc;
 }
-.discovery-item:hover { background: #dee2e6; }
+.discovery-item:hover { background: #444; }
 
+/* Calibration UI */
+details {
+  margin-bottom: 1rem;
+  border: 1px solid #444;
+  border-radius: 4px;
+  overflow: hidden;
+}
+summary.section-title {
+  padding: 0.8rem;
+  background: #3a3a3a;
+  cursor: pointer;
+  font-weight: bold;
+  color: #e0e0e0;
+  user-select: none;
+}
+summary.section-title:hover {
+  background: #444;
+}
+.cal-section {
+  padding: 0.8rem;
+}
+.section-desc {
+  font-size: 0.85rem;
+  color: #999;
+  margin-bottom: 0.8rem;
+  margin-top: 0;
+}
+.cal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+}
+.cal-grid .field {
+  display: flex;
+  flex-direction: column;
+}
+.cal-grid label {
+  margin-top: 0;
+  font-size: 0.85rem;
+  color: #aaa;
+  font-weight: normal;
+}
+.cal-grid input {
+  margin-top: 0.2rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+}
+.field-hint {
+  font-size: 0.75rem;
+  color: #777;
+  margin-top: 0.15rem;
+}
+
+/* Per-channel grid */
+.channel-cal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.5rem;
+  align-items: center;
+}
+.channel-cal-label {
+  font-weight: bold;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+}
+.channel-cal-grid input {
+  margin-top: 0;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+}
+.channel-cal-header {
+  display: contents;
+  font-weight: bold;
+  color: #999;
+  font-size: 0.8rem;
+}
+.channel-cal-row {
+  display: contents;
+}
+
+/* System settings - dropdowns inline */
+.cal-grid select {
+  margin-top: 0.2rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+}
 </style>
     <!-- CSS_PLACEHOLDER -->
   </head>
@@ -121,6 +217,7 @@ button:disabled { background: #ccc; cursor: not-allowed; }
       <nav id="nav" style="display: none;">
         <button class="tab-btn active" id="tabWifi">Wi-Fi</button>
         <button class="tab-btn" id="tabMqtt">MQTT</button>
+        <button class="tab-btn" id="tabCal" style="display:none;">Calibration</button>
         <button class="tab-btn" id="tabUpdate">Update</button>
       </nav>
 
@@ -170,10 +267,85 @@ button:disabled { background: #ccc; cursor: not-allowed; }
         </form>
       </div>
 
-      <!-- STEP 3: Firmware Update -->
+      <!-- STEP 3: Calibration -->
       <div id="step3" class="step">
+        <h2>Calibration</h2>
+        <p style="font-size: 0.9rem; margin-bottom: 1.5rem;">
+          Adjust calibration values. Click "Save Calibration" to apply — the device reboots with the new values.
+        </p>
+
+        <form id="calForm">
+          <!-- System -->
+          <details open>
+            <summary class="section-title">System Settings</summary>
+            <div class="cal-section">
+              <p class="section-desc">Line frequency and ADC PGA gain (affects current channels only).</p>
+              <div class="cal-grid" id="systemCal"></div>
+            </div>
+          </details>
+
+          <!-- Voltage -->
+          <details open>
+            <summary class="section-title">Voltage Calibration</summary>
+            <div class="cal-section">
+              <p class="section-desc">Per-phase voltage gain and offset. One set applies to all metering chips.</p>
+              <div class="cal-grid" id="voltageCal"></div>
+            </div>
+          </details>
+
+          <!-- Current -->
+          <details>
+            <summary class="section-title">Current Calibration</summary>
+            <div class="cal-section">
+              <p class="section-desc">Per-channel current gain and offset. Tune gain with a known load; zero offset with no load.</p>
+              <div id="channelCurrentCal"></div>
+            </div>
+          </details>
+
+          <!-- Power -->
+          <details>
+            <summary class="section-title">Power Calibration</summary>
+            <div class="cal-section">
+              <p class="section-desc">Per-phase offsets (W / VAR) and power gain.</p>
+              <div class="cal-grid" id="powerCal"></div>
+            </div>
+          </details>
+
+          <!-- Phase -->
+          <details>
+            <summary class="section-title">Phase Calibration</summary>
+            <div class="cal-section">
+              <p class="section-desc">Per-phase angle correction for CT phase shift. Units: degrees.</p>
+              <div class="cal-grid" id="phaseCal"></div>
+            </div>
+          </details>
+
+          <!-- Per-Channel Energy Offset -->
+          <details>
+            <summary class="section-title">Energy Offsets</summary>
+            <div class="cal-section">
+              <p class="section-desc">Fixed kWh offset per channel. Use to sync with your utility meter or zero initial energy.</p>
+              <div id="channelEnergyCal"></div>
+            </div>
+          </details>
+
+          <!-- Advanced (collapsible, not open) -->
+          <details>
+            <summary class="section-title">Advanced</summary>
+            <div class="cal-section">
+              <p class="section-desc">Meter constant (combined PL_Constant, sets energy pulse rate), no-load thresholds, and PLL stability gates. Leave at defaults unless you understand each setting.</p>
+              <div class="cal-grid" id="advancedCal"></div>
+            </div>
+          </details>
+
+          <button type="submit" id="calBtn">Save Calibration</button>
+        </form>
+      </div>
+
+      <!-- STEP 4: Firmware Update -->
+      <div id="step4" class="step">
         <h2 id="updateTitle">Firmware Update</h2>
-        <p style="font-size: 0.9rem; color: #666; margin-bottom: 1.5rem;">
+        <p style="font-size: 0.9rem; color: #b0b0b0; margin-bottom: 1.5rem;">
           Select a firmware binary (.bin) to upload to the device.
         </p>
         
@@ -182,10 +354,10 @@ button:disabled { background: #ccc; cursor: not-allowed; }
           <input type="file" id="otaFile" name="otaFile" accept=".bin" required />
 
           <div id="otaProgressContainer" style="display: none; margin-top: 1.5rem;">
-            <div style="width: 100%; background: #eee; border-radius: 4px; height: 10px; overflow: hidden;">
-              <div id="otaProgressBar" style="width: 0%; background: #007bff; height: 100%; transition: width 0.2s;"></div>
+            <div style="width: 100%; background: #444; border-radius: 4px; height: 10px; overflow: hidden;">
+              <div id="otaProgressBar" style="width: 0%; background: #4da6ff; height: 100%; transition: width 0.2s;"></div>
             </div>
-            <p id="otaStatusText" style="font-size: 0.8rem; text-align: center; margin-top: 0.5rem; color: #666;">0%</p>
+            <p id="otaStatusText" style="font-size: 0.8rem; text-align: center; margin-top: 0.5rem; color: #b0b0b0;">0%</p>
           </div>
 
           <button type="submit" id="otaBtn">Upload & Update</button>
@@ -194,12 +366,12 @@ button:disabled { background: #ccc; cursor: not-allowed; }
     </div>
 
     <script>
-var X=document.getElementById("statusMsg"),Y=document.getElementById("ssid"),k=document.getElementById("step1"),M=document.getElementById("step2"),q=document.getElementById("step3"),F=document.getElementById("nav"),O=document.getElementById("wifiForm"),$=document.getElementById("mqttForm"),x=document.getElementById("updateForm"),W=document.getElementById("tabWifi"),B=document.getElementById("tabMqtt"),H=document.getElementById("tabUpdate"),P=document.getElementById("wifiTitle"),T=document.getElementById("mqttTitle"),z=document.getElementById("otaProgressContainer"),w=document.getElementById("otaProgressBar"),D=document.getElementById("otaStatusText"),A=document.getElementById("otaBtn"),V=document.getElementById("discoveryList"),Z=!1;function Q(j,G){if(G==="none"){X.style.display="none";return}X.innerHTML=j,X.className=`status ${G}`,X.style.display="block"}function _(j){if(k.classList.toggle("active",j==="wifi"),M.classList.toggle("active",j==="mqtt"),q.classList.toggle("active",j==="update"),W.classList.toggle("active",j==="wifi"),B.classList.toggle("active",j==="mqtt"),H.classList.toggle("active",j==="update"),j==="wifi")L();if(j==="mqtt")m()}W.addEventListener("click",()=>_("wifi"));B.addEventListener("click",()=>_("mqtt"));H.addEventListener("click",()=>_("update"));async function y(){try{let G=await(await fetch("/api/config")).json();if(Z=G.configured,Z){if(F.style.display="flex",P.textContent="Wi-Fi Settings",T.textContent="MQTT Settings",document.getElementById("wifiBtn").textContent="Update Wi-Fi",document.getElementById("saveBtn").textContent="Update MQTT",G.mqtt_ip){let E=G.mqtt_ip.split("://"),J="mqtt://",K=G.mqtt_ip;if(E.length>1)J=E[0]+"://",K=E[1];let R=K.split(":");if(document.getElementById("mqtt_type").value=J,document.getElementById("mqtt_host").value=R[0],R.length>1)document.getElementById("mqtt_port").value=R[1]}document.getElementById("mqtt_user").value=G.mqtt_user||""}else H.style.display="none"}catch(j){console.error("Config fetch error:",j)}}async function L(){try{let G=await(await fetch("/api/scan")).json(),E=Y.value;if(Y.innerHTML='<option value="">Select a network...</option>',G.forEach((J)=>{let K=document.createElement("option");K.value=J.ssid,K.textContent=`${J.ssid} (${J.rssi}dBm)${J.secure?" \uD83D\uDD12":""}`,Y.appendChild(K)}),E)Y.value=E}catch(j){console.error("Scan error:",j)}}O.addEventListener("submit",async(j)=>{j.preventDefault();let G=new FormData(O),E=Object.fromEntries(G.entries());Q("Saving WiFi configuration and connecting...","info"),document.getElementById("wifiBtn").disabled=!0;try{if(!(await fetch("/api/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(E)})).ok)throw Error("Save failed");N()}catch(J){console.warn("Save request error, starting poll anyway (network switch probable)"),N()}});async function N(){let j=0,G=0,E=setInterval(async()=>{j++;try{let K=await(await fetch("/api/wifi-status",{signal:AbortSignal.timeout(1500)})).json();if(K.connected&&K.sta_ip!=="0.0.0.0"){if(G++,G>=2)clearInterval(E),I(K.sta_ip)}else if(G=0,j>40)clearInterval(E),Q("Timed out waiting for WiFi. Please check SSID/Password and try again.","error"),document.getElementById("wifiBtn").disabled=!1}catch(J){if(j>15)clearInterval(E),C()}},2000)}function I(j){let E=`http://${j}`;if(!(window.location.hostname==="energy-meter.local"||window.location.hostname===j))Q(`<strong>Connected to Wi-Fi!</strong><br>
-       The device is now reachable at its new IP: <strong>${j}</strong><br><br>
+var F=document.getElementById("statusMsg"),T=document.getElementById("ssid"),Qj=document.getElementById("step1"),Xj=document.getElementById("step2"),Yj=document.getElementById("step3"),Zj=document.getElementById("step4"),$j=document.getElementById("nav"),n=document.getElementById("wifiForm"),C=document.getElementById("mqttForm"),Wj=document.getElementById("updateForm"),Kj=document.getElementById("calForm"),a=document.getElementById("tabWifi"),e=document.getElementById("tabMqtt"),v=document.getElementById("tabUpdate"),A=document.getElementById("tabCal"),Rj=document.getElementById("wifiTitle"),Uj=document.getElementById("mqttTitle"),m=document.getElementById("otaProgressContainer"),Nj=document.getElementById("otaProgressBar"),o=document.getElementById("otaStatusText"),S=document.getElementById("otaBtn"),V=document.getElementById("discoveryList"),L=!1;function U(z,J){if(J==="none"){F.style.display="none";return}F.innerHTML=z,F.className=`status ${J}`,F.style.display="block"}function _(z){if(Qj.classList.toggle("active",z==="wifi"),Xj.classList.toggle("active",z==="mqtt"),Yj.classList.toggle("active",z==="cal"),Zj.classList.toggle("active",z==="update"),a.classList.toggle("active",z==="wifi"),e.classList.toggle("active",z==="mqtt"),v.classList.toggle("active",z==="update"),A.classList.toggle("active",z==="cal"),z==="wifi")t();if(z==="mqtt")kj();if(z==="cal")qj()}a.addEventListener("click",()=>_("wifi"));e.addEventListener("click",()=>_("mqtt"));v.addEventListener("click",()=>_("update"));A.addEventListener("click",()=>_("cal"));async function Mj(){try{let J=await(await fetch("/api/config")).json();if(L=J.configured,L){if($j.style.display="flex",Rj.textContent="Wi-Fi Settings",Uj.textContent="MQTT Settings",document.getElementById("wifiBtn").textContent="Update Wi-Fi",document.getElementById("saveBtn").textContent="Update MQTT",A.style.display="block",J.mqtt_ip){let j=J.mqtt_ip.split("://"),Y="mqtt://",X=J.mqtt_ip;if(j.length>1)Y=j[0]+"://",X=j[1];let Z=X.split(":");if(document.getElementById("mqtt_type").value=Y,document.getElementById("mqtt_host").value=Z[0],Z.length>1)document.getElementById("mqtt_port").value=Z[1]}document.getElementById("mqtt_user").value=J.mqtt_user||""}else v.style.display="none",A.style.display="none"}catch(z){console.error("Config fetch error:",z)}}async function t(){try{let J=await(await fetch("/api/scan")).json(),j=T.value;if(T.innerHTML='<option value="">Select a network...</option>',J.forEach((Y)=>{let X=document.createElement("option");X.value=Y.ssid,X.textContent=`${Y.ssid} (${Y.rssi}dBm)${Y.secure?" \uD83D\uDD12":""}`,T.appendChild(X)}),j)T.value=j}catch(z){console.error("Scan error:",z)}}n.addEventListener("submit",async(z)=>{z.preventDefault();let J=new FormData(n),j=Object.fromEntries(J.entries());U("Saving WiFi configuration and connecting...","info"),document.getElementById("wifiBtn").disabled=!0;try{if(!(await fetch("/api/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(j)})).ok)throw Error("Save failed");s()}catch(Y){console.warn("Save request error, starting poll anyway (network switch probable)"),s()}});async function s(){let z=0,J=0,j=setInterval(async()=>{z++;try{let X=await(await fetch("/api/wifi-status",{signal:AbortSignal.timeout(1500)})).json();if(X.connected&&X.sta_ip!=="0.0.0.0"){if(J++,J>=2)clearInterval(j),xj(X.sta_ip)}else if(J=0,z>40)clearInterval(j),U("Timed out waiting for WiFi. Please check SSID/Password and try again.","error"),document.getElementById("wifiBtn").disabled=!1}catch(Y){if(z>15)clearInterval(j),Oj()}},2000)}function xj(z){let j=`http://${z}`;if(!(window.location.hostname==="energy-meter.local"||window.location.hostname===z))U(`<strong>Connected to Wi-Fi!</strong><br>
+       The device is now reachable at its new IP: <strong>${z}</strong><br><br>
        <a href="http://energy-meter.local" style="color:white;font-weight:bold;display:block;margin-bottom:10px;">Go to energy-meter.local</a>
-       <a href="${E}" style="color:white;text-decoration:underline;">Or use direct IP: ${j}</a>`,"success"),setTimeout(()=>{window.location.href="http://energy-meter.local"},4000);else if(!Z)g();else Q("Wi-Fi Connected!","success"),setTimeout(()=>Q("","none"),3000),document.getElementById("wifiBtn").disabled=!1}function C(){Q(`<strong>Connection Lost (Mode Change)</strong><br>
+       <a href="${j}" style="color:white;text-decoration:underline;">Or use direct IP: ${z}</a>`,"success"),setTimeout(()=>{window.location.href="http://energy-meter.local"},4000);else if(!L)Hj();else U("Wi-Fi Connected!","success"),setTimeout(()=>U("","none"),3000),document.getElementById("wifiBtn").disabled=!1}function Oj(){U(`<strong>Connection Lost (Mode Change)</strong><br>
        The device has likely connected to Wi-Fi and moved to its new address.<br><br>
-       <a href="http://energy-meter.local" style="color:white;font-weight:bold;">Continue at energy-meter.local</a>`,"info"),setTimeout(()=>{window.location.href="http://energy-meter.local"},5000)}function g(){Q("","none"),_("mqtt")}async function m(){V.innerHTML="<p>Searching for local MQTT brokers (mDNS)...</p>";try{let G=await(await fetch("/api/mqtt-brokers")).json();if(G.length===0){V.innerHTML="<p>No brokers discovered automatically.</p>";return}V.innerHTML="<strong>Discovered Brokers:</strong>",G.forEach((E)=>{let J=document.createElement("div");J.className="discovery-item",J.textContent=`${E.hostname} (${E.ip}:${E.port})`,J.onclick=()=>{document.getElementById("mqtt_host").value=E.ip,document.getElementById("mqtt_port").value=E.port.toString();let K=document.getElementById("mqtt_type"),R=E.protocol||"mqtt://";if(E.txt&&(E.txt.protocol==="ws"||E.txt.transport==="ws"))R="ws://";else if([8080,8083,9001].includes(E.port))R="ws://";K.value=R},V.appendChild(J)})}catch(j){V.innerHTML=""}}$.addEventListener("submit",async(j)=>{j.preventDefault();let G=new FormData($),E=Object.fromEntries(G.entries()),K={mqtt_uri:`${E.mqtt_type}${E.mqtt_host}:${E.mqtt_port}`,mqtt_user:E.mqtt_user,mqtt_pass:E.mqtt_pass};Q("Saving MQTT configuration...","info"),document.getElementById("saveBtn").disabled=!0;try{if(!(await fetch("/api/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(K)})).ok)throw Error("Save failed");if(!Z)Q("All set! Rebooting device...","success"),await fetch("/api/reboot",{method:"POST"}),Array.from($.elements).forEach((U)=>{U.disabled=!0});else Q("MQTT configuration saved!","success"),setTimeout(()=>Q("","none"),3000),document.getElementById("saveBtn").disabled=!1}catch(R){Q("Failed to save. Try again.","error"),document.getElementById("saveBtn").disabled=!1}});x.addEventListener("submit",(j)=>{j.preventDefault();let G=document.getElementById("otaFile");if(!G.files||G.files.length===0)return;let E=G.files[0],J=new XMLHttpRequest;z.style.display="block",A.disabled=!0,Q("Uploading firmware...","info"),J.upload.addEventListener("progress",(K)=>{if(K.lengthComputable){let R=Math.round(K.loaded/K.total*100);w.style.width=R+"%",D.textContent=R+"%"}}),J.addEventListener("load",()=>{if(J.status===200)Q("Update successful! Rebooting...","success"),D.textContent="Done! Rebooting...";else Q("Update failed. Please try again.","error"),A.disabled=!1,z.style.display="none"}),J.addEventListener("error",()=>{Q("Network error during upload.","error"),A.disabled=!1,z.style.display="none"}),J.open("POST","/api/update"),J.send(E)});async function v(){await y(),L()}v();
+       <a href="http://energy-meter.local" style="color:white;font-weight:bold;">Continue at energy-meter.local</a>`,"info"),setTimeout(()=>{window.location.href="http://energy-meter.local"},5000)}function Hj(){U("","none"),_("mqtt")}async function kj(){V.innerHTML="<p>Searching for local MQTT brokers (mDNS)...</p>";try{let J=await(await fetch("/api/mqtt-brokers")).json();if(J.length===0){V.innerHTML="<p>No brokers discovered automatically.</p>";return}V.innerHTML="<strong>Discovered Brokers:</strong>",J.forEach((j)=>{let Y=document.createElement("div");Y.className="discovery-item",Y.textContent=`${j.hostname} (${j.ip}:${j.port})`,Y.onclick=()=>{document.getElementById("mqtt_host").value=j.ip,document.getElementById("mqtt_port").value=j.port.toString();let X=document.getElementById("mqtt_type"),Z=j.protocol||"mqtt://";if(j.txt&&(j.txt.protocol==="ws"||j.txt.transport==="ws"))Z="ws://";else if([8080,8083,9001].includes(j.port))Z="ws://";X.value=Z},V.appendChild(Y)})}catch(z){V.innerHTML=""}}C.addEventListener("submit",async(z)=>{z.preventDefault();let J=new FormData(C),j=Object.fromEntries(J.entries()),X={mqtt_uri:`${j.mqtt_type}${j.mqtt_host}:${j.mqtt_port}`,mqtt_user:j.mqtt_user,mqtt_pass:j.mqtt_pass};U("Saving MQTT configuration...","info"),document.getElementById("saveBtn").disabled=!0;try{if(!(await fetch("/api/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(X)})).ok)throw Error("Save failed");if(!L)U("All set! Rebooting device...","success"),await fetch("/api/reboot",{method:"POST"}),Array.from(C.elements).forEach((x)=>{x.disabled=!0});else U("MQTT configuration saved!","success"),setTimeout(()=>U("","none"),3000),document.getElementById("saveBtn").disabled=!1}catch(Z){U("Failed to save. Try again.","error"),document.getElementById("saveBtn").disabled=!1}});Wj.addEventListener("submit",(z)=>{z.preventDefault();let J=document.getElementById("otaFile");if(!J.files||J.files.length===0)return;let j=J.files[0],Y=new XMLHttpRequest;m.style.display="block",S.disabled=!0,U("Uploading firmware...","info"),Y.upload.addEventListener("progress",(X)=>{if(X.lengthComputable){let Z=Math.round(X.loaded/X.total*100);Nj.style.width=Z+"%",o.textContent=Z+"%"}}),Y.addEventListener("load",()=>{if(Y.status===200)U("Update successful! Rebooting...","success"),o.textContent="Done! Rebooting...";else U("Update failed. Please try again.","error"),S.disabled=!1,m.style.display="none"}),Y.addEventListener("error",()=>{U("Network error during upload.","error"),S.disabled=!1,m.style.display="none"}),Y.open("POST","/api/update"),Y.send(j)});var G={line_freq_50hz:"Line Frequency",pga_gain_mode:"ADC Gain (current only)",voltage_gain:"Voltage Gain",voltage_offset:"Voltage Offset",current_gain:"Current Gain",current_offset:"Current Offset",active_power_offset:"Active Power Offset",reactive_power_offset:"Reactive Power Offset",power_gain:"Power Gain",phase_angle:"Phase Angle",meter_constant:"Meter Constant",p_start_th:"Active Power Threshold",q_start_th:"Reactive Power Threshold",s_start_th:"Apparent Power Threshold",p_phase_th:"Active Power PLL Threshold",q_phase_th:"Reactive Power PLL Threshold",s_phase_th:"Apparent Power PLL Threshold"},f={line_freq_50hz:"Mains frequency. 50 Hz most regions, 60 Hz US/JP.",pga_gain_mode:"Amplifies weak current signals. 1× for 100 A CTs, 2× or 4× for smaller CTs. Voltage channel unaffected.",voltage_gain:"Scaling factor for voltage measurement accuracy. Tune with a known reference voltage.",voltage_offset:"DC bias compensation. Set to 0 with no voltage applied. LSB counts.",current_gain:"Calibration multiplier per channel. Tune with a known resistive load. Default 10148.",current_offset:"Cancels residual current at zero load. LSB counts.",active_power_offset:"Residual watts at zero load. Units: W.",reactive_power_offset:"Residual VAR at zero load. Units: VAR.",power_gain:"Combined active/reactive power multiplier per phase.",phase_angle:"Corrects CT phase lead. Positive angle = CT leads voltage. Units: degrees.",meter_constant:"Total meter constant. Determines energy accumulation speed. Default ~140559464 (~140000 pulses/kWh).",p_start_th:"Report zero active power below this threshold.",q_start_th:"Report zero reactive power below this threshold.",s_start_th:"Report zero apparent power below this threshold.",p_phase_th:"PLL zero-crossing stability threshold for active power.",q_phase_th:"PLL zero-crossing stability threshold for reactive power.",s_phase_th:"PLL zero-crossing stability threshold for apparent power."},jj=0.008789;function Bj(z){let J=Math.round(z/jj);if(J>255)J=255;if(J<-255)J=-255;return J}function Vj(z){return Math.round(z*jj*100)/100}function r(z,J,j,Y,X){let Z=document.createElement("div");Z.className="field";let x=document.createElement("label");x.textContent=J,x.htmlFor=z,Z.appendChild(x);let K=document.createElement("select");K.id=z,K.name=z;for(let H of Y){let M=document.createElement("option");if(M.value=H.v,M.textContent=H.l,H.v===X)M.selected=!0;K.appendChild(M)}Z.appendChild(K);let N=document.createElement("div");return N.className="field-hint",N.textContent=j,Z.appendChild(N),Z}function i(z,J,j,Y,X){let Z=document.createElement("div");Z.className="field";let x=document.createElement("label");x.textContent=J,x.htmlFor=z,Z.appendChild(x);let K=document.createElement("input");if(K.id=z,K.name=z,K.type="number",K.value=Y,X)K.step=X;Z.appendChild(K);let N=document.createElement("div");return N.className="field-hint",N.textContent=j,Z.appendChild(N),Z}function _j(z){let J=document.getElementById("systemCal");J.innerHTML="";let j=z.line_freq_50hz===!0?"true":"false";J.appendChild(r("hw_line_freq_50hz",G.line_freq_50hz,f.line_freq_50hz,[{v:"true",l:"50 Hz"},{v:"false",l:"60 Hz"}],j));let Y=String(z.pga_gain_mode??0);J.appendChild(r("hw_pga_gain_mode",G.pga_gain_mode,f.pga_gain_mode,[{v:"0",l:"1×"},{v:"1",l:"2×"},{v:"2",l:"4×"}],Y))}async function qj(){try{let J=await(await fetch("/api/calibration")).json(),j=J.hardware,Y=J.channels;_j(j);let X=document.getElementById("voltageCal");X.innerHTML="";let Z=document.createElement("div");Z.className="channel-cal-grid";let x=document.createElement("div");x.className="channel-cal-header",x.innerHTML="<span>Line</span><span>Gain</span><span>Offset</span>",Z.appendChild(x);let{voltage_gain:K,voltage_offset:N}=j;for(let Q=0;Q<3;++Q){let W=document.createElement("div");W.className="channel-cal-row";let O=document.createElement("span");O.className="channel-cal-label",O.textContent=`L${Q+1}`,W.appendChild(O);let $=document.createElement("input");$.type="number",$.step="1",$.id=`hw_voltage_gain_${Q}`,$.name=`hw_voltage_gain_${Q}`,$.value=String(K?K[Q]:51150),$.placeholder="51150",W.appendChild($);let R=document.createElement("input");R.type="number",R.step="1",R.id=`hw_voltage_offset_${Q}`,R.name=`hw_voltage_offset_${Q}`,R.value=String(N?N[Q]:0),R.placeholder="0",W.appendChild(R),Z.appendChild(W)}X.appendChild(Z),Z.style.gridColumn="1 / -1";let H=document.getElementById("channelCurrentCal");H.innerHTML="";let M=document.createElement("div");M.className="channel-cal-grid";let I=document.createElement("div");I.className="channel-cal-header",I.innerHTML="<span>Line</span><span>Gain</span><span>Offset</span>",M.appendChild(I);let{current_gain:u,current_offset:g}=j;for(let Q=0;Q<12;++Q){let W=document.createElement("div");W.className="channel-cal-row";let O=document.createElement("span");O.className="channel-cal-label",O.textContent=`Ch ${Q+1}`,W.appendChild(O);let $=document.createElement("input");$.type="number",$.step="1",$.id=`hw_current_gain_${Q}`,$.name=`hw_current_gain_${Q}`,$.value=String(u?u[Q]:10148),$.placeholder="10148",W.appendChild($);let R=document.createElement("input");R.type="number",R.step="1",R.id=`hw_current_offset_${Q}`,R.name=`hw_current_offset_${Q}`,R.value=String(g?g[Q]:0),R.placeholder="0",W.appendChild(R),M.appendChild(W)}H.appendChild(M);let w=document.getElementById("powerCal");w.innerHTML="";let B=document.createElement("div");B.className="channel-cal-grid",B.style.gridTemplateColumns="1fr 1fr 1fr 1fr";let E=document.createElement("div");E.className="channel-cal-header",E.innerHTML="<span>Line</span><span>P Offset (W)</span><span>Q Offset (VAR)</span><span>Power Gain</span>",B.appendChild(E);let{active_power_offset:b,reactive_power_offset:c,power_gain:h}=j;for(let Q=0;Q<3;++Q){let W=document.createElement("div");W.className="channel-cal-row";let O=document.createElement("span");O.className="channel-cal-label",O.textContent=`L${Q+1}`,W.appendChild(O);let $=document.createElement("input");$.type="number",$.step="1",$.id=`hw_active_power_offset_${Q}`,$.name=`hw_active_power_offset_${Q}`,$.value=String(b?b[Q]:0),$.placeholder="0",W.appendChild($);let R=document.createElement("input");R.type="number",R.step="1",R.id=`hw_reactive_power_offset_${Q}`,R.name=`hw_reactive_power_offset_${Q}`,R.value=String(c?c[Q]:0),R.placeholder="0",W.appendChild(R);let k=document.createElement("input");k.type="number",k.step="1",k.id=`hw_power_gain_${Q}`,k.name=`hw_power_gain_${Q}`,k.value=String(h?h[Q]:0),k.placeholder="0",W.appendChild(k),B.appendChild(W)}w.appendChild(B),B.style.gridColumn="1 / -1";let p=document.getElementById("phaseCal");p.innerHTML="";let q=document.createElement("div");q.className="channel-cal-grid",q.innerHTML='<div class="channel-cal-header"><span>Channel</span><span style="grid-column: span 2;">Phase Angle (deg)</span></div>';let d=j.phase_angle;for(let Q=0;Q<12;++Q){let W=d?d[Q]:0;q.innerHTML+=`<div class="channel-cal-row"><span class="channel-cal-label">Ch ${Q+1}</span><input type="number" step="0.01" min="-2.24" max="2.24" name="hw_phase_angle_${Q}" id="hw_phase_angle_${Q}" value="${Vj(W)}" style="grid-column: span 2"></div>`}p.appendChild(q);let l=document.getElementById("channelEnergyCal");l.innerHTML="";let P=document.createElement("div");P.className="channel-cal-grid";let y=document.createElement("div");y.className="channel-cal-header",y.innerHTML='<span>Channel</span><span style="grid-column: span 2;">Offset (kWh)</span>',P.appendChild(y);for(let Q=0;Q<Y.length;++Q){let W=document.createElement("div");W.className="channel-cal-row";let O=document.createElement("span");O.className="channel-cal-label",O.textContent=`Ch ${Q+1}`,W.appendChild(O);let $=document.createElement("input");$.type="number",$.step="any",$.name=`ch_energy_offset_${Q}`,$.value=String(Y[Q].energy_offset_kwh),$.placeholder="0",$.style.gridColumn="span 2",W.appendChild($),P.appendChild(W)}l.appendChild(P);let D=document.getElementById("advancedCal");D.innerHTML="",D.style.gridTemplateColumns="1fr";let zj=(j.power_constant_h??0)*65536+(j.power_constant_l??0)>>>0;D.appendChild(i("hw_meter_constant",G.meter_constant,f.meter_constant,String(zj),"1"));let Jj=[{key:"p_start_th",hint:"Active power noise floor. Readings below this are zeroed."},{key:"q_start_th",hint:"Reactive power noise floor. Readings below this are zeroed."},{key:"s_start_th",hint:"Apparent power noise floor. Readings below this are zeroed."},{key:"p_phase_th",hint:"Zero-crossing PLL stability gate for active power."},{key:"q_phase_th",hint:"Zero-crossing PLL stability gate for reactive power."},{key:"s_phase_th",hint:"Zero-crossing PLL stability gate for apparent power."}];for(let Q of Jj){let W=j[Q.key]??0;D.appendChild(i(`hw_${Q.key}`,G[Q.key]??Q.key,Q.hint,String(W),"1"))}}catch(z){console.error("Calibration fetch error:",z),U("Failed to load calibration data.","error")}}Kj.addEventListener("submit",async(z)=>{z.preventDefault();function J(K){let N=document.getElementById(K);return N?N.value:"0"}function j(K,N){let H=[];for(let M=0;M<N;++M)H.push(parseInt(J(`hw_${K}_${M}`),10)||0);return H}function Y(K,N){let H=[];for(let M=0;M<N;++M)H.push(Bj(parseFloat(J(`hw_${K}_${M}`))||0));return H}let X={};X.line_freq_50hz=J("hw_line_freq_50hz")==="true",X.pga_gain_mode=parseInt(J("hw_pga_gain_mode"),10)||0,X.voltage_gain=j("voltage_gain",3),X.voltage_offset=j("voltage_offset",3),X.current_gain=j("current_gain",12),X.current_offset=j("current_offset",12),X.active_power_offset=j("active_power_offset",3),X.reactive_power_offset=j("reactive_power_offset",3),X.power_gain=j("power_gain",3),X.phase_angle=Y("phase_angle",12);let Z=parseInt(J("hw_meter_constant"),10)||0;X.power_constant_h=Z>>>16&65535,X.power_constant_l=Z&65535,X.p_start_th=parseInt(J("hw_p_start_th"),10)||0,X.q_start_th=parseInt(J("hw_q_start_th"),10)||0,X.s_start_th=parseInt(J("hw_s_start_th"),10)||0,X.p_phase_th=parseInt(J("hw_p_phase_th"),10)||0,X.q_phase_th=parseInt(J("hw_q_phase_th"),10)||0,X.s_phase_th=parseInt(J("hw_s_phase_th"),10)||0;let x=[];for(let K=0;K<12;++K){let N=document.querySelector(`input[name="ch_energy_offset_${K}"]`);x.push({energy_offset_kwh:N?parseFloat(N.value)||0:0})}U("Saving calibration...","info"),document.getElementById("calBtn").disabled=!0;try{if(!(await fetch("/api/calibration",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({hardware:X,channels:x})})).ok)throw Error("Save failed");U("Calibration saved and applied successfully!","success"),setTimeout(()=>{U("","none"),document.getElementById("calBtn").disabled=!1},3000)}catch(K){U("Failed to save calibration.","error"),document.getElementById("calBtn").disabled=!1}});async function Pj(){await Mj(),t()}Pj();
 
 </script>
   </body>

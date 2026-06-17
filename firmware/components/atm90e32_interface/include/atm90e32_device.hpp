@@ -28,12 +28,27 @@ struct DeviceReading {
 };
 
 struct DeviceConfig {
-    uint16_t line_freq_mode = 0x0185;
+    uint16_t pl_const_h = 0x0861;
+    uint16_t pl_const_l = 0xC468;
+    uint16_t line_freq_mode = 0x0087;
     uint16_t pga_gain = 0x0000;
-    uint16_t voltage_gain = 0x0000;
-    uint16_t current_gain_a = 0x0000;
-    uint16_t current_gain_b = 0x0000;
-    uint16_t current_gain_c = 0x0000;
+
+    uint16_t p_start_th = 0x0000;
+    uint16_t q_start_th = 0x0000;
+    uint16_t s_start_th = 0x0000;
+    uint16_t p_phase_th = 0x0000;
+    uint16_t q_phase_th = 0x0000;
+    uint16_t s_phase_th = 0x0000;
+
+    int16_t p_offset[3] = {0, 0, 0};
+    int16_t q_offset[3] = {0, 0, 0};
+    uint16_t pq_gain[3] = {0, 0, 0};
+    int16_t phi[3] = {0, 0, 0};
+
+    uint16_t voltage_gain[3] = {0xC7CE, 0xC7CE, 0xC7CE};
+    uint16_t voltage_offset[3] = {0, 0, 0};
+    uint16_t current_gain[3] = {0x27A4, 0x27A4, 0x27A4};
+    uint16_t current_offset[3] = {0, 0, 0};
 };
 
 struct DeviceHealth {
