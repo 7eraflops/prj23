@@ -33,4 +33,6 @@ private:
     std::array<atm90e32::Device, CHIP_COUNT> _devices;
     std::array<std::array<atm90e32::DeviceReading, CHANNELS_PER_CHIP>, CHIP_COUNT> _line_cache;
     std::array<EnergyData, TOTAL_CHANNELS> _channel_cache;
+
+    AppConfig::CalibrationData _last_cal;
 };
