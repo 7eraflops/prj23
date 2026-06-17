@@ -12,6 +12,7 @@
       <nav id="nav" style="display: none;">
         <button class="tab-btn active" id="tabWifi">Wi-Fi</button>
         <button class="tab-btn" id="tabMqtt">MQTT</button>
+        <button class="tab-btn" id="tabCal" style="display:none;">Calibration</button>
         <button class="tab-btn" id="tabUpdate">Update</button>
       </nav>
 
@@ -61,10 +62,85 @@
         </form>
       </div>
 
-      <!-- STEP 3: Firmware Update -->
+      <!-- STEP 3: Calibration -->
       <div id="step3" class="step">
+        <h2>Calibration</h2>
+        <p style="font-size: 0.9rem; margin-bottom: 1.5rem;">
+          Adjust calibration values. Click "Save Calibration" to apply — the device reboots with the new values.
+        </p>
+
+        <form id="calForm">
+          <!-- System -->
+          <details open>
+            <summary class="section-title">System Settings</summary>
+            <div class="cal-section">
+              <p class="section-desc">Line frequency and ADC PGA gain (affects current channels only).</p>
+              <div class="cal-grid" id="systemCal"></div>
+            </div>
+          </details>
+
+          <!-- Voltage -->
+          <details open>
+            <summary class="section-title">Voltage Calibration</summary>
+            <div class="cal-section">
+              <p class="section-desc">Per-phase voltage gain and offset. One set applies to all metering chips.</p>
+              <div class="cal-grid" id="voltageCal"></div>
+            </div>
+          </details>
+
+          <!-- Current -->
+          <details>
+            <summary class="section-title">Current Calibration</summary>
+            <div class="cal-section">
+              <p class="section-desc">Per-channel current gain and offset. Tune gain with a known load; zero offset with no load.</p>
+              <div id="channelCurrentCal"></div>
+            </div>
+          </details>
+
+          <!-- Power -->
+          <details>
+            <summary class="section-title">Power Calibration</summary>
+            <div class="cal-section">
+              <p class="section-desc">Per-phase offsets (W / VAR) and power gain.</p>
+              <div class="cal-grid" id="powerCal"></div>
+            </div>
+          </details>
+
+          <!-- Phase -->
+          <details>
+            <summary class="section-title">Phase Calibration</summary>
+            <div class="cal-section">
+              <p class="section-desc">Per-phase angle correction for CT phase shift. Units: degrees.</p>
+              <div class="cal-grid" id="phaseCal"></div>
+            </div>
+          </details>
+
+          <!-- Per-Channel Energy Offset -->
+          <details>
+            <summary class="section-title">Energy Offsets</summary>
+            <div class="cal-section">
+              <p class="section-desc">Fixed kWh offset per channel. Use to sync with your utility meter or zero initial energy.</p>
+              <div id="channelEnergyCal"></div>
+            </div>
+          </details>
+
+          <!-- Advanced (collapsible, not open) -->
+          <details>
+            <summary class="section-title">Advanced</summary>
+            <div class="cal-section">
+              <p class="section-desc">Meter constant (combined PL_Constant, sets energy pulse rate), no-load thresholds, and PLL stability gates. Leave at defaults unless you understand each setting.</p>
+              <div class="cal-grid" id="advancedCal"></div>
+            </div>
+          </details>
+
+          <button type="submit" id="calBtn">Save Calibration</button>
+        </form>
+      </div>
+
+      <!-- STEP 4: Firmware Update -->
+      <div id="step4" class="step">
         <h2 id="updateTitle">Firmware Update</h2>
-        <p style="font-size: 0.9rem; color: #666; margin-bottom: 1.5rem;">
+        <p style="font-size: 0.9rem; color: #b0b0b0; margin-bottom: 1.5rem;">
           Select a firmware binary (.bin) to upload to the device.
         </p>
         
@@ -73,10 +149,10 @@
           <input type="file" id="otaFile" name="otaFile" accept=".bin" required />
 
           <div id="otaProgressContainer" style="display: none; margin-top: 1.5rem;">
-            <div style="width: 100%; background: #eee; border-radius: 4px; height: 10px; overflow: hidden;">
-              <div id="otaProgressBar" style="width: 0%; background: #007bff; height: 100%; transition: width 0.2s;"></div>
+            <div style="width: 100%; background: #444; border-radius: 4px; height: 10px; overflow: hidden;">
+              <div id="otaProgressBar" style="width: 0%; background: #4da6ff; height: 100%; transition: width 0.2s;"></div>
             </div>
-            <p id="otaStatusText" style="font-size: 0.8rem; text-align: center; margin-top: 0.5rem; color: #666;">0%</p>
+            <p id="otaStatusText" style="font-size: 0.8rem; text-align: center; margin-top: 0.5rem; color: #b0b0b0;">0%</p>
           </div>
 
           <button type="submit" id="otaBtn">Upload & Update</button>
