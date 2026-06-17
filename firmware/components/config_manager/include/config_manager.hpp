@@ -27,12 +27,38 @@ struct AppConfig {
     ChannelPhase channel_phases[NUM_CHANNELS];
 
     struct ChannelCalibration {
-        float current_gain = 1.0F;
-        float power_gain = 1.0F;
         float energy_offset_kwh = 0.0F;
     };
 
     ChannelCalibration channel_calibration[NUM_CHANNELS];
+
+    struct CalibrationData {
+        uint16_t pl_const_h = 0x0861;
+        uint16_t pl_const_l = 0xC468;
+        bool line_freq_50hz = true;
+        uint8_t pga_gain_mode = 0;
+
+        uint16_t p_start_th = 0x0000;
+        uint16_t q_start_th = 0x0000;
+        uint16_t s_start_th = 0x0000;
+        uint16_t p_phase_th = 0x0000;
+        uint16_t q_phase_th = 0x0000;
+        uint16_t s_phase_th = 0x0000;
+
+        int16_t p_offset[3] = {0, 0, 0};
+        int16_t q_offset[3] = {0, 0, 0};
+        uint16_t pq_gain[3] = {0, 0, 0};
+        int16_t phi[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+        uint16_t u_gain[3]   = {0xC7CE, 0xC7CE, 0xC7CE};
+        int16_t u_offset[3] = {0, 0, 0};
+        uint16_t i_gain[12]  = {0x27A4, 0x27A4, 0x27A4, 0x27A4,
+                                 0x27A4, 0x27A4, 0x27A4, 0x27A4,
+                                 0x27A4, 0x27A4, 0x27A4, 0x27A4};
+        int16_t i_offset[12]= {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    };
+
+    CalibrationData calibration_data;
 
     AppConfig() {
         for (int i = 0; i < NUM_CHANNELS; ++i) {
@@ -99,6 +125,10 @@ public:
     void set_channel_calibration(int channel, const AppConfig::ChannelCalibration& calibration);
     void save_calibration_settings();
 
+    const AppConfig::CalibrationData& get_calibration_data() const;
+    void set_calibration_data(const AppConfig::CalibrationData& data);
+    void save_hardware_calibration();
+
 private:
     AppConfig _config;
     mutable std::mutex _mtx;
@@ -118,4 +148,5 @@ private:
 
     void load_channel_settings();
     void load_calibration_settings();
+    void load_hardware_calibration();
 };
