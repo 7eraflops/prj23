@@ -11,6 +11,7 @@
 #include <esp_netif.h>
 #include <esp_wifi.h>
 #include <nvs_flash.h>
+#include <algorithm>
 
 static const char* TAG = "WifiManager";
 
@@ -21,6 +22,10 @@ static EventGroupHandle_t s_wifi_event_group;
 WifiManager::WifiManager() {}
 
 WifiManager::~WifiManager() {
+    if (_reconnect_timer) {
+        esp_timer_stop(_reconnect_timer);
+        esp_timer_delete(_reconnect_timer);
+    }
     if (s_wifi_event_group) {
         vEventGroupDelete(s_wifi_event_group);
     }
@@ -52,6 +57,12 @@ esp_err_t WifiManager::init() {
                                                &WifiManager::event_handler, this));
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP,
                                                &WifiManager::event_handler, this));
+
+    esp_timer_create_args_t timer_args = {};
+    timer_args.callback = reconnect_timer_cb;
+    timer_args.arg = this;
+    timer_args.name = "wifi_reconnect";
+    ESP_ERROR_CHECK(esp_timer_create(&timer_args, &_reconnect_timer));
 
     return ESP_OK;
 }
@@ -151,8 +162,9 @@ std::vector<WifiNetwork> WifiManager::scan_networks() {
     return networks;
 }
 
-void WifiManager::wait_for_connection() {
-    xEventGroupWaitBits(s_wifi_event_group, WIFI_CONNECTED_BIT, pdFALSE, pdFALSE, portMAX_DELAY);
+bool WifiManager::wait_for_connection() {
+    EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group, WIFI_CONNECTED_BIT, pdFALSE, pdFALSE, pdMS_TO_TICKS(30000));
+    return (bits & WIFI_CONNECTED_BIT) != 0;
 }
 
 esp_err_t WifiManager::clear_settings() {
@@ -186,13 +198,18 @@ void WifiManager::event_handler(void* arg, esp_event_base_t event_base, int32_t 
     }
 }
 
+void WifiManager::reconnect_timer_cb(void* arg) {
+    auto* self = static_cast<WifiManager*>(arg);
+    ESP_LOGI(TAG, "Attempting Wi-Fi reconnect (attempt %d)", self->_reconnect_attempts + 1);
+    esp_wifi_connect();
+}
+
 void WifiManager::on_wifi_event(int32_t event_id, void* event_data) {
     if (event_id == WIFI_EVENT_STA_START) {
         // We handle connecting explicitly in connect() or it's handled by auto-reconnect
     } else if (event_id == WIFI_EVENT_AP_START) {
         // AP started
     } else if (event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        ESP_LOGW(TAG, "Disconnected from WiFi, retrying...");
         _is_connected = false;
         xEventGroupClearBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
 
@@ -200,7 +217,13 @@ void WifiManager::on_wifi_event(int32_t event_id, void* event_data) {
         wifi_mode_t mode;
         esp_wifi_get_mode(&mode);
         if (mode == WIFI_MODE_STA || mode == WIFI_MODE_APSTA) {
-            esp_wifi_connect();
+            int delay_ms = std::min(1000 * (1 << _reconnect_attempts), 60000);
+            _reconnect_attempts++;
+            if (_reconnect_timer) {
+                esp_timer_stop(_reconnect_timer);
+                esp_timer_start_once(_reconnect_timer, delay_ms * 1000ULL);
+            }
+            ESP_LOGW(TAG, "Disconnected from WiFi, reconnecting in %d ms", delay_ms);
         }
     } else if (event_id == WIFI_EVENT_AP_STACONNECTED) {
         wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*)event_data;
@@ -215,6 +238,7 @@ void WifiManager::on_ip_event(int32_t event_id, void* event_data) {
     if (event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*)event_data;
         ESP_LOGI(TAG, "Got IP: " IPSTR, IP2STR(&event->ip_info.ip));
+        _reconnect_attempts = 0;
         _is_connected = true;
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
     }

@@ -5,6 +5,8 @@
 #include <esp_wifi.h>
 #include <string>
 #include <vector>
+#include <atomic>
+#include <esp_timer.h>
 
 // Represents a discovered Wi-Fi network during a scan
 struct WifiNetwork {
@@ -50,8 +52,9 @@ public:
 
     /**
      * @brief Blocks the current FreeRTOS task until a successful Wi-Fi connection is established.
+     * @return true if connected successfully, false if timed out.
      */
-    void wait_for_connection();
+    bool wait_for_connection();
 
     /**
      * @brief Erases saved Wi-Fi credentials from the internal ESP-IDF storage.
@@ -87,5 +90,9 @@ private:
     void on_wifi_event(int32_t event_id, void* event_data);
     void on_ip_event(int32_t event_id, void* event_data);
 
-    bool _is_connected = false;
+    static void reconnect_timer_cb(void* arg);
+
+    std::atomic<bool> _is_connected{false};
+    esp_timer_handle_t _reconnect_timer = nullptr;
+    int _reconnect_attempts = 0;
 };
