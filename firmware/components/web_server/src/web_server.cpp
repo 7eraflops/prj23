@@ -41,9 +41,9 @@ static void add_calibration_data_to_json(cJSON* root, const AppConfig::Calibrati
     add_arr("voltage_offset", cal.u_offset, 3);
     add_arr("current_gain", cal.i_gain, 12);
     add_arr("current_offset", cal.i_offset, 12);
-    add_arr("active_power_offset", cal.p_offset, 3);
-    add_arr("reactive_power_offset", cal.q_offset, 3);
-    add_arr("power_gain", cal.pq_gain, 3);
+    add_arr("active_power_offset", cal.p_offset, 12);
+    add_arr("reactive_power_offset", cal.q_offset, 12);
+    add_arr("active_power_gain", cal.pq_gain, 12);
     add_arr("phase_angle", cal.phi, 12);
 
     // Advanced
@@ -149,9 +149,9 @@ static bool read_calibration_data_from_json(cJSON* root, AppConfig::CalibrationD
     read_arr("voltage_offset", cal.u_offset, 3, read_int16_from_json);
     read_arr("current_gain", cal.i_gain, 12, read_uint16_from_json);
     read_arr("current_offset", cal.i_offset, 12, read_int16_from_json);
-    read_arr("active_power_offset", cal.p_offset, 3, read_int16_from_json);
-    read_arr("reactive_power_offset", cal.q_offset, 3, read_int16_from_json);
-    read_arr("power_gain", cal.pq_gain, 3, read_uint16_from_json);
+    read_arr("active_power_offset", cal.p_offset, 12, read_int16_from_json);
+    read_arr("reactive_power_offset", cal.q_offset, 12, read_int16_from_json);
+    read_arr("active_power_gain", cal.pq_gain, 12, read_uint16_from_json);
     read_arr("phase_angle", cal.phi, 12, read_int16_from_json);
 
     read_uint16("power_constant_h", cal.pl_const_h);

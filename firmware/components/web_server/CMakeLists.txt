@@ -11,6 +11,7 @@ add_custom_command(
     COMMAND bun install
     COMMAND bun run build
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/web"
+    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/web/src/index.html" "${CMAKE_CURRENT_SOURCE_DIR}/web/src/main.ts" "${CMAKE_CURRENT_SOURCE_DIR}/web/src/style.css"
     COMMENT "Building web frontend..."
 )
 

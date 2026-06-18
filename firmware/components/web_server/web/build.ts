@@ -28,13 +28,13 @@ async function build() {
   // 5. Inline the JavaScript directly into the HTML
   html = html.replace(
     '<script type="module" src="/src/main.ts"></script>',
-    `<script>\n${jsCode}\n</script>`,
+    () => `<script>\n${jsCode}\n</script>`
   );
 
   // 6. Inline the CSS directly into the HTML (replacing the link tag)
   html = html.replace(
     '<link rel="stylesheet" href="/src/style.css" />',
-    `<style>\n${cssCode}\n</style>`,
+    () => `<style>\n${cssCode}\n</style>`
   );
 
   // 7. Write the final single-file HTML to the component root directory

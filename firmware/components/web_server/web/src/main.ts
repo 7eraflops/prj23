@@ -450,6 +450,20 @@ function regToDeg(reg: number): number {
   return Math.round(reg * DEG_PER_LSB * 100) / 100;
 }
 
+const POWER_SCALE = 0.00032;
+
+function lsbToPower(lsb: number): string {
+  return String(Math.round(lsb * POWER_SCALE * 1000) / 1000);
+}
+
+function powerToLsb(pwr: number): number {
+  let lsb = Math.round(pwr / POWER_SCALE);
+  if (lsb > 32767) lsb = 32767;
+  if (lsb < -32768) lsb = -32768;
+  return lsb;
+}
+
+
 /* ── Field builders ── */
 
 function buildSelect(
@@ -489,6 +503,8 @@ function buildField(
   hint: string,
   value: string,
   step?: string,
+  min?: string,
+  max?: string,
 ): HTMLDivElement {
   const div = document.createElement("div");
   div.className = "field";
@@ -502,6 +518,8 @@ function buildField(
   inp.type = "number";
   inp.value = value;
   if (step) inp.step = step;
+  if (min !== undefined) inp.min = min;
+  if (max !== undefined) inp.max = max;
   div.appendChild(inp);
   const hi = document.createElement("div");
   hi.className = "field-hint";
@@ -627,6 +645,7 @@ async function fetchCalibration(): Promise<void> {
       gi.name = `hw_voltage_gain_${i}`;
       gi.value = String(vGain ? vGain[i] : 0xC7CE);
       gi.placeholder = "51150";
+      gi.min = "0"; gi.max = "65535";
       row.appendChild(gi);
       const oi = document.createElement("input");
       oi.type = "number";
@@ -635,6 +654,7 @@ async function fetchCalibration(): Promise<void> {
       oi.name = `hw_voltage_offset_${i}`;
       oi.value = String(vOff ? vOff[i] : 0);
       oi.placeholder = "0";
+      oi.min = "-32768"; oi.max = "32767";
       row.appendChild(oi);
       vGrid.appendChild(row);
     }
@@ -648,7 +668,7 @@ async function fetchCalibration(): Promise<void> {
     grid.className = "channel-cal-grid";
     const header = document.createElement("div");
     header.className = "channel-cal-header";
-    header.innerHTML = "<span>Line</span><span>Gain</span><span>Offset</span>";
+    header.innerHTML = "<span>Channel</span><span>Gain</span><span>Offset</span>";
     grid.appendChild(header);
 
     const chGainArr = hw["current_gain"] as number[] | undefined;
@@ -668,6 +688,7 @@ async function fetchCalibration(): Promise<void> {
       gi.name = `hw_current_gain_${i}`;
       gi.value = String(chGainArr ? chGainArr[i] : 0x27A4);
       gi.placeholder = "10148";
+      gi.min = "0"; gi.max = "65535";
       row.appendChild(gi);
 
       const oi = document.createElement("input");
@@ -677,6 +698,7 @@ async function fetchCalibration(): Promise<void> {
       oi.name = `hw_current_offset_${i}`;
       oi.value = String(chOffArr ? chOffArr[i] : 0);
       oi.placeholder = "0";
+      oi.min = "-32768"; oi.max = "32767";
       row.appendChild(oi);
 
       grid.appendChild(row);
@@ -691,33 +713,36 @@ async function fetchCalibration(): Promise<void> {
     pGrid.style.gridTemplateColumns = "1fr 1fr 1fr 1fr";
     const pHeader = document.createElement("div");
     pHeader.className = "channel-cal-header";
-    pHeader.innerHTML = "<span>Line</span><span>P Offset (W)</span><span>Q Offset (VAR)</span><span>Power Gain</span>";
+    pHeader.innerHTML = "<span>Channel</span><span>P Offset (W)</span><span>Q Offset (VAR)</span><span>Power Gain</span>";
     pGrid.appendChild(pHeader);
 
     const pOff = hw["active_power_offset"] as number[] | undefined;
     const qOff = hw["reactive_power_offset"] as number[] | undefined;
-    const pqGain = hw["power_gain"] as number[] | undefined;
-    for (let i = 0; i < 3; ++i) {
+    const pqGain = hw["active_power_gain"] as number[] | undefined;
+    for (let i = 0; i < 12; ++i) {
       const row = document.createElement("div");
       row.className = "channel-cal-row";
       const lbl = document.createElement("span");
       lbl.className = "channel-cal-label";
-      lbl.textContent = `L${i + 1}`;
+      lbl.textContent = `Ch ${i + 1}`;
       row.appendChild(lbl);
       const a = document.createElement("input");
-      a.type = "number"; a.step = "1";
+      a.type = "number"; a.step = "any";
       a.id = `hw_active_power_offset_${i}`; a.name = `hw_active_power_offset_${i}`;
-      a.value = String(pOff ? pOff[i] : 0); a.placeholder = "0";
+      a.value = pOff ? lsbToPower(pOff[i]) : "0"; a.placeholder = "0";
+      a.min = "-10"; a.max = "10";
       row.appendChild(a);
       const b = document.createElement("input");
-      b.type = "number"; b.step = "1";
+      b.type = "number"; b.step = "any";
       b.id = `hw_reactive_power_offset_${i}`; b.name = `hw_reactive_power_offset_${i}`;
-      b.value = String(qOff ? qOff[i] : 0); b.placeholder = "0";
+      b.value = qOff ? lsbToPower(qOff[i]) : "0"; b.placeholder = "0";
+      b.min = "-10"; b.max = "10";
       row.appendChild(b);
       const c = document.createElement("input");
       c.type = "number"; c.step = "1";
-      c.id = `hw_power_gain_${i}`; c.name = `hw_power_gain_${i}`;
+      c.id = `hw_active_power_gain_${i}`; c.name = `hw_active_power_gain_${i}`;
       c.value = String(pqGain ? pqGain[i] : 0); c.placeholder = "0";
+      c.min = "0"; c.max = "65535";
       row.appendChild(c);
       pGrid.appendChild(row);
     }
@@ -783,6 +808,8 @@ async function fetchCalibration(): Promise<void> {
       FIELD_HINTS["meter_constant"],
       String(mcRaw),
       "1",
+      "0",
+      "4294967295"
     ));
 
     const adv: Array<{ key: string; hint: string }> = [
@@ -801,6 +828,8 @@ async function fetchCalibration(): Promise<void> {
         f.hint,
         String(raw),
         "1",
+        "0",
+        "65535"
       ));
     }
   } catch (err) {
@@ -833,6 +862,14 @@ calForm.addEventListener("submit", async (e) => {
     return out;
   }
 
+  function readPowerOffsetArr(key: string, count: number): number[] {
+    const out: number[] = [];
+    for (let i = 0; i < count; ++i) {
+      out.push(powerToLsb(parseFloat(getVal(`hw_${key}_${i}`)) || 0));
+    }
+    return out;
+  }
+
   const hw: Record<string, unknown> = {};
 
   hw["line_freq_50hz"] = getVal("hw_line_freq_50hz") === "true";
@@ -842,9 +879,9 @@ calForm.addEventListener("submit", async (e) => {
   hw["voltage_offset"] = readArr("voltage_offset", 3);
   hw["current_gain"] = readArr("current_gain", 12);
   hw["current_offset"] = readArr("current_offset", 12);
-  hw["active_power_offset"] = readArr("active_power_offset", 3);
-  hw["reactive_power_offset"] = readArr("reactive_power_offset", 3);
-  hw["power_gain"] = readArr("power_gain", 3);
+  hw["active_power_offset"] = readPowerOffsetArr("active_power_offset", 12);
+  hw["reactive_power_offset"] = readPowerOffsetArr("reactive_power_offset", 12);
+  hw["active_power_gain"] = readArr("active_power_gain", 12);
   hw["phase_angle"] = readDegArr("phase_angle", 12);
 
   const meterConst = parseInt(getVal("hw_meter_constant"), 10) || 0;
