@@ -132,15 +132,24 @@ extern "C" void app_main() {
                 rssi = ap_info.rssi;
             }
             uint32_t free_heap = esp_get_free_heap_size();
-            uint32_t uptime_h = esp_timer_get_time() / 3600000000ULL;
+            
+            int64_t uptime_us = esp_timer_get_time();
+            uint32_t total_seconds = static_cast<uint32_t>(uptime_us / 1000000ULL);
+            uint32_t days = total_seconds / 86400;
+            uint32_t hours = (total_seconds % 86400) / 3600;
+            uint32_t minutes = (total_seconds % 3600) / 60;
+            uint32_t seconds = total_seconds % 60;
+            char uptime_str[32];
+            snprintf(uptime_str, sizeof(uptime_str), "%lud %02luh %02lum %02lus", days, hours, minutes, seconds);
+
             float mcu_temp = board_manager::get_mcu_temperature();
             uint32_t stack_min = uxTaskGetStackHighWaterMark(NULL);
 
-            char payload[200];
+            char payload[256];
             snprintf(payload, sizeof(payload),
-                     "{\"status\":\"alive\",\"wifi_rssi\":%d,\"free_heap\":%lu,\"uptime\":%lu,"
+                     "{\"status\":\"alive\",\"wifi_rssi\":%d,\"free_heap\":%lu,\"uptime\":%lu,\"uptime_str\":\"%s\","
                      "\"stack_min\":%lu,\"mcu_temp\":%.1f}",
-                     rssi, (unsigned long)free_heap, (unsigned long)uptime_h,
+                     rssi, (unsigned long)free_heap, (unsigned long)total_seconds, uptime_str,
                      (unsigned long)stack_min, mcu_temp);
 
             mqtt.publish("energy_meter/heartbeat", payload, 0, false);
