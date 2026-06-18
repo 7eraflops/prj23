@@ -61,6 +61,9 @@ private:
     void publish_control_entities(int num_channels = 12);
 
 private:
+    void append_main_device_json(std::ostringstream& ss) const;
+    void append_channel_device_json(std::ostringstream& ss, int channel) const;
+
     void publish_button_entity(const std::string& name, const std::string& command_topic,
                                const std::string& icon, bool enabled_by_default = true);
 

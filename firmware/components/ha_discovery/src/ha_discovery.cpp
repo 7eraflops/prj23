@@ -11,6 +11,26 @@ static const char* TAG = "HA_DISCOVERY";
 HaDiscovery::HaDiscovery(MqttManager& mqtt_manager, const std::string& device_id)
     : _mqtt_manager(mqtt_manager), _status_topic("energy_meter/heartbeat"), _device_id(device_id) {}
 
+void HaDiscovery::append_main_device_json(std::ostringstream& ss) const {
+    ss << "\"device\": {";
+    ss << "\"identifiers\": [\"" << _device_id << "\"],";
+    ss << "\"name\": \"ESP32 Energy Meter\",";
+    ss << "\"manufacturer\": \"Custom\",";
+    ss << "\"model\": \"12-Channel Meter\",";
+    ss << "\"configuration_url\": \"http://energy-meter.local\"";
+    ss << "}";
+}
+
+void HaDiscovery::append_channel_device_json(std::ostringstream& ss, int channel) const {
+    ss << "\"device\": {";
+    ss << "\"identifiers\": [\"" << _device_id << "_ch" << channel << "\"],";
+    ss << "\"name\": \"Channel " << (channel + 1) << "\",";
+    ss << "\"via_device\": \"" << _device_id << "\",";
+    ss << "\"manufacturer\": \"Custom\",";
+    ss << "\"model\": \"12-Channel Meter\"";
+    ss << "}";
+}
+
 void HaDiscovery::publish_discovery_messages(int num_channels) {
     if (!_mqtt_manager.is_connected()) {
         ESP_LOGW(TAG, "Cannot publish discovery messages: MQTT not connected.");
@@ -44,7 +64,7 @@ void HaDiscovery::publish_discovery_messages(int num_channels) {
     publish_diagnostic_discovery("wifi_rssi", "Wi-Fi Signal", "dBm", "signal_strength",
                                  "diagnostic");
     vTaskDelay(pdMS_TO_TICKS(10));
-    publish_diagnostic_discovery("uptime", "Uptime", "h", "duration", "diagnostic");
+    publish_diagnostic_discovery("uptime", "Uptime", "s", "duration", "diagnostic");
     vTaskDelay(pdMS_TO_TICKS(10));
     publish_diagnostic_discovery("mcu_temp", "MCU Temperature", "°C", "temperature", "diagnostic");
 
@@ -82,17 +102,11 @@ void HaDiscovery::publish_sensor_discovery(int channel, const std::string& senso
     payload << "\"value_template\": \"{{ value_json." << sensor_type << " }}\",";
 
     // Device info (Sub-device per channel)
-    payload << "\"device\": {";
-    payload << "\"identifiers\": [\"" << _device_id << "_ch" << channel << "\"],";
-    payload << "\"name\": \"Channel " << (channel + 1) << "\",";
-    payload << "\"via_device\": \"" << _device_id << "\",";
-    payload << "\"manufacturer\": \"Custom\",";
-    payload << "\"model\": \"12-Channel Meter\"";
-    payload << "}";
+    append_channel_device_json(payload, channel);
     payload << "}";
 
     // Publish config message with retain flag = true
-    _mqtt_manager.publish(topic, payload.str(), 0, true);
+    _mqtt_manager.publish(topic, payload.str(), 1, true);
 }
 
 void HaDiscovery::publish_diagnostic_discovery(const std::string& sensor_type,
@@ -127,17 +141,11 @@ void HaDiscovery::publish_diagnostic_discovery(const std::string& sensor_type,
     payload << "\"value_template\": \"{{ value_json." << sensor_type << " }}\",";
 
     // Device info
-    payload << "\"device\": {";
-    payload << "\"identifiers\": [\"" << _device_id << "\"],";
-    payload << "\"name\": \"ESP32 Energy Meter\",";
-    payload << "\"manufacturer\": \"Custom\",";
-    payload << "\"model\": \"12-Channel Meter\",";
-    payload << "\"configuration_url\": \"http://energy-meter.local\"";
-    payload << "}";
+    append_main_device_json(payload);
     payload << "}";
 
     // Publish config message with retain flag = true
-    _mqtt_manager.publish(topic, payload.str(), 0, true);
+    _mqtt_manager.publish(topic, payload.str(), 1, true);
 }
 
 void HaDiscovery::publish_control_entities(int num_channels) {
@@ -195,16 +203,10 @@ void HaDiscovery::publish_button_entity(const std::string& name, const std::stri
     payload << "\"payload_available\": \"alive\",";
     payload << "\"payload_not_available\": \"dead\",";
 
-    payload << "\"device\": {";
-    payload << "\"identifiers\": [\"" << _device_id << "\"],";
-    payload << "\"name\": \"ESP32 Energy Meter\",";
-    payload << "\"manufacturer\": \"Custom\",";
-    payload << "\"model\": \"12-Channel Meter\",";
-    payload << "\"configuration_url\": \"http://energy-meter.local\"";
-    payload << "}";
+    append_main_device_json(payload);
     payload << "}";
 
-    _mqtt_manager.publish(topic, payload.str(), 0, true);
+    _mqtt_manager.publish(topic, payload.str(), 1, true);
 }
 
 void HaDiscovery::publish_number_entity(const std::string& name, const std::string& command_topic,
@@ -237,16 +239,10 @@ void HaDiscovery::publish_number_entity(const std::string& name, const std::stri
     payload << "\"payload_available\": \"alive\",";
     payload << "\"payload_not_available\": \"dead\",";
 
-    payload << "\"device\": {";
-    payload << "\"identifiers\": [\"" << _device_id << "\"],";
-    payload << "\"name\": \"ESP32 Energy Meter\",";
-    payload << "\"manufacturer\": \"Custom\",";
-    payload << "\"model\": \"12-Channel Meter\",";
-    payload << "\"configuration_url\": \"http://energy-meter.local\"";
-    payload << "}";
+    append_main_device_json(payload);
     payload << "}";
 
-    _mqtt_manager.publish(topic, payload.str(), 0, true);
+    _mqtt_manager.publish(topic, payload.str(), 1, true);
 }
 
 void HaDiscovery::publish_switch_entity(const std::string& name, const std::string& command_topic,
@@ -277,16 +273,10 @@ void HaDiscovery::publish_switch_entity(const std::string& name, const std::stri
     payload << "\"payload_available\": \"alive\",";
     payload << "\"payload_not_available\": \"dead\",";
 
-    payload << "\"device\": {";
-    payload << "\"identifiers\": [\"" << _device_id << "\"],";
-    payload << "\"name\": \"ESP32 Energy Meter\",";
-    payload << "\"manufacturer\": \"Custom\",";
-    payload << "\"model\": \"12-Channel Meter\",";
-    payload << "\"configuration_url\": \"http://energy-meter.local\"";
-    payload << "}";
+    append_main_device_json(payload);
     payload << "}";
 
-    _mqtt_manager.publish(topic, payload.str(), 0, true);
+    _mqtt_manager.publish(topic, payload.str(), 1, true);
 }
 
 void HaDiscovery::publish_select_entity(const std::string& name, const std::string& command_topic,
@@ -333,14 +323,8 @@ void HaDiscovery::publish_select_entity(const std::string& name, const std::stri
     payload << "\"payload_available\": \"alive\",";
     payload << "\"payload_not_available\": \"dead\",";
 
-    payload << "\"device\": {";
-    payload << "\"identifiers\": [\"" << _device_id << "\"],";
-    payload << "\"name\": \"ESP32 Energy Meter\",";
-    payload << "\"manufacturer\": \"Custom\",";
-    payload << "\"model\": \"12-Channel Meter\",";
-    payload << "\"configuration_url\": \"http://energy-meter.local\"";
-    payload << "}";
+    append_main_device_json(payload);
     payload << "}";
 
-    _mqtt_manager.publish(topic, payload.str(), 0, true);
+    _mqtt_manager.publish(topic, payload.str(), 1, true);
 }
