@@ -22,6 +22,12 @@ CommandHandler::~CommandHandler() {
 }
 
 void CommandHandler::start() {
+    // If already running, just re-subscribe (called on MQTT reconnect)
+    if (_cmd_queue != nullptr) {
+        _mqtt.subscribe("energy_meter/cmnd/#", 1);
+        return;
+    }
+
     ESP_LOGI(TAG, "Subscribing to command topics...");
     _mqtt.subscribe("energy_meter/cmnd/#", 1);
 
@@ -116,11 +122,12 @@ void CommandHandler::publish_status() {
                        "{\"device_id\":\"%s\",",
                        _device_id.c_str());
 
-    offset += snprintf(buf + offset, sizeof(buf) - offset, "\"channel_active\":");
+    offset += snprintf(buf + offset, sizeof(buf) - offset, "\"channel_active\":[");
     for (int i = 0; i < NUM_CHANNELS; ++i) {
         offset += snprintf(buf + offset, sizeof(buf) - offset, "%s%d", i == 0 ? "" : ",",
                            _config.is_channel_active(i) ? 1 : 0);
     }
+    offset += snprintf(buf + offset, sizeof(buf) - offset, "]");
 
     offset += snprintf(buf + offset, sizeof(buf) - offset, ",\"channel_phase\":[");
     for (int i = 0; i < NUM_CHANNELS; ++i) {
