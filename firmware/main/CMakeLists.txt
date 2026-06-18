@@ -10,5 +10,6 @@ idf_component_register(
         mqtt_manager
         ha_discovery
         sensor_manager
+        atm90e32_interface
         command_handler
 )
