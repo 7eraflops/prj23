@@ -13,7 +13,9 @@ ATM90E32Sensor::ATM90E32Sensor(ConfigManager& config_manager)
     : _config_manager(config_manager), _devices{atm90e32::Device(_transport, 0),
                                                 atm90e32::Device(_transport, 1),
                                                 atm90e32::Device(_transport, 2),
-                                                atm90e32::Device(_transport, 3)} {}
+                                                atm90e32::Device(_transport, 3)} {
+    _last_raw_energy.fill(-1.0F);
+}
 
 bool ATM90E32Sensor::init() {
     _last_cal = _config_manager.get_calibration_data();
@@ -46,22 +48,51 @@ bool ATM90E32Sensor::init() {
         device_cfg.q_phase_th = hw_cal.q_phase_th;
         device_cfg.s_phase_th = hw_cal.s_phase_th;
 
-        // Hardware ADC mapping has been configured via CHANNEL_MAP_I and CHANNEL_MAP_U
-        // to match Logical Line A -> Physical L1, Line B -> L2, Line C -> L3.
-        // We can map calibration data directly 1:1.
+        uint16_t channel_map_u = 0;
+        
         for (int i = 0; i < 3; ++i) {
-            device_cfg.p_offset[i] = hw_cal.p_offset[i];
-            device_cfg.q_offset[i] = hw_cal.q_offset[i];
-            device_cfg.pq_gain[i] = hw_cal.pq_gain[i];
-            device_cfg.voltage_gain[i] = hw_cal.u_gain[i];
-            device_cfg.voltage_offset[i] = hw_cal.u_offset[i];
+            int channel = chip * CHANNELS_PER_CHIP + i;
+            ChannelPhase phase = _config_manager.get_channel_phase(channel);
+
+            uint16_t u_adc;
+            int v_idx;
+
+            switch (phase) {
+            case ChannelPhase::PHASE_L1:
+                u_adc = 6; // U2
+                v_idx = 0;
+                break;
+            case ChannelPhase::PHASE_L2:
+                u_adc = 5; // U1
+                v_idx = 1;
+                break;
+            case ChannelPhase::PHASE_L3:
+                u_adc = 4; // U0
+                v_idx = 2;
+                break;
+            default:
+                u_adc = 6 - i;
+                v_idx = i;
+                break;
+            }
+
+            channel_map_u |= (u_adc << (i * 4));
+
+            device_cfg.voltage_gain[i] = hw_cal.u_gain[v_idx];
+            device_cfg.voltage_offset[i] = hw_cal.u_offset[v_idx];
         }
+
+        device_cfg.channel_map_u = channel_map_u;
+        device_cfg.channel_map_i = 0x0210; // I0->A, I1->B, I2->C
 
         const size_t ch_base = chip * CHANNELS_PER_CHIP;
         for (int i = 0; i < 3; ++i) {
             device_cfg.current_gain[i] = hw_cal.i_gain[ch_base + i];
             device_cfg.current_offset[i] = hw_cal.i_offset[ch_base + i];
             device_cfg.phi[i] = hw_cal.phi[ch_base + i];
+            device_cfg.p_offset[i] = hw_cal.p_offset[ch_base + i];
+            device_cfg.q_offset[i] = hw_cal.q_offset[ch_base + i];
+            device_cfg.pq_gain[i] = hw_cal.pq_gain[ch_base + i];
         }
 
         const esp_err_t err = _devices[chip].init(device_cfg);
@@ -136,9 +167,6 @@ void ATM90E32Sensor::update() {
 
         atm90e32::LineInput current_input = map.input;
 
-        ChannelPhase phase = _config_manager.get_channel_phase(channel);
-        atm90e32::LineInput voltage_input = phase_to_input(phase, map.input);
-
         atm90e32::DeviceReading reading;
         esp_err_t err = _devices[map.chip_index].read_line(current_input, reading);
         if (err != ESP_OK) {
@@ -148,19 +176,27 @@ void ATM90E32Sensor::update() {
             continue;
         }
 
-        if (voltage_input != current_input) {
-            float phase_voltage = 0.0F;
-            err = _devices[map.chip_index].read_line_voltage(voltage_input, phase_voltage);
-            if (err == ESP_OK) {
-                reading.voltage = phase_voltage;
-                // The ATM90E32 calculates apparent/active power using the native voltage pin.
-                // If we are overriding the voltage from another phase, the hardware apparent
-                // power is invalid (likely 0 if the native pin is disconnected).
-                reading.apparent_power = reading.voltage * reading.current;
-            }
+        _line_cache[map.chip_index][static_cast<int>(current_input)] = reading;
+
+        // Energy accumulation
+        float current_raw = reading.energy_kwh;
+        if (_last_raw_energy[channel] < 0.0F) {
+            _last_raw_energy[channel] = current_raw;
         }
 
-        _line_cache[map.chip_index][static_cast<int>(current_input)] = reading;
+        float delta = current_raw - _last_raw_energy[channel];
+        if (delta < -0.1F) { // Chip reset or wraparound
+            constexpr float MAX_RAW_ENERGY_KWH = 65536.0F / (100.0F * 3200.0F);
+            delta += MAX_RAW_ENERGY_KWH;
+        } else if (delta < 0.0F) {
+            delta = 0.0F; // Noise or tiny jitter
+        }
+        
+        _last_raw_energy[channel] = current_raw;
+
+        AppConfig::EnergyTotals totals = _config_manager.get_energy_totals();
+        totals.total_kwh[channel] += delta;
+        _config_manager.set_energy_totals(totals);
 
         const float energy_offset = _config_manager.get_channel_calibration(channel).energy_offset_kwh;
 
@@ -171,11 +207,21 @@ void ATM90E32Sensor::update() {
         out.reactive_power = reading.reactive_power;
         out.apparent_power = reading.apparent_power;
         out.power_factor = reading.power_factor;
-        out.energy = reading.energy_kwh + energy_offset;
+        out.energy = totals.total_kwh[channel] + energy_offset;
         out.frequency = reading.frequency;
 
         _channel_cache[channel] = out;
     }
+
+    if (++_update_count >= 300) { // Every 5 minutes (assuming 1Hz update)
+        save_state();
+        _update_count = 0;
+    }
+}
+
+void ATM90E32Sensor::save_state() {
+    ESP_LOGI(TAG, "Saving energy totals to NVS...");
+    _config_manager.save_energy_totals();
 }
 
 EnergyData ATM90E32Sensor::read_channel(int channel) {

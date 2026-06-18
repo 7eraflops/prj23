@@ -49,6 +49,9 @@ struct DeviceConfig {
     uint16_t voltage_offset[3] = {0, 0, 0};
     uint16_t current_gain[3] = {0x27A4, 0x27A4, 0x27A4};
     uint16_t current_offset[3] = {0, 0, 0};
+
+    uint16_t channel_map_u = 0x0456;
+    uint16_t channel_map_i = 0x0210;
 };
 
 struct DeviceHealth {

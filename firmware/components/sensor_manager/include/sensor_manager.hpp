@@ -1,10 +1,12 @@
 #pragma once
 
 #include "freertos/FreeRTOS.h" // IWYU pragma: keep
+#include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "i_energy_sensor.hpp"
 #include "mqtt_manager.hpp"
 
+#include <atomic>
 #include <memory>
 
 /**
@@ -44,8 +46,9 @@ private:
     MqttManager& _mqtt_manager;
     int _num_channels;
 
-    TaskHandle_t _task_handle;
-    bool _running;
+    TaskHandle_t _task_handle = nullptr;
+    std::atomic<bool> _running{false};
+    SemaphoreHandle_t _stop_sem = nullptr;
 
     static void task_entry(void* arg);
     void task_loop();

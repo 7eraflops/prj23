@@ -118,13 +118,11 @@ esp_err_t Device::init(const DeviceConfig& cfg) {
     // L2 is physically connected to Line B (U1)
     // L3 is physically connected to Line A (U0)
     // Restore default mapping for currents so CT1 stays with Logical Phase A:
-    // ChannelMapI (0x01): Phase C (I2), Phase B (I1), Phase A (I0) -> 0x0210
-    err = write_status(reg::StatusControl::CHANNEL_MAP_I, 0x0210);
+    err = write_status(reg::StatusControl::CHANNEL_MAP_I, cfg.channel_map_i);
     if (err != ESP_OK)
         return err;
 
-    // ChannelMapU (0x02): Phase C (U0), Phase B (U1), Phase A (U2) -> 0x0456
-    err = write_status(reg::StatusControl::CHANNEL_MAP_U, 0x0456);
+    err = write_status(reg::StatusControl::CHANNEL_MAP_U, cfg.channel_map_u);
     if (err != ESP_OK)
         return err;
 
@@ -292,12 +290,33 @@ esp_err_t Device::init(const DeviceConfig& cfg) {
 
 esp_err_t Device::verify_comm() {
     uint16_t value = 0;
-    const esp_err_t err = _transport.read16(_chip_index, to_addr(reg::StatusControl::LAST_SPI_DATA), value);
+    const esp_err_t err =
+        _transport.read16(_chip_index, to_addr(reg::StatusControl::LAST_SPI_DATA), value);
     if (err != ESP_OK) {
         mark_read_error();
         return err;
     }
     (void)value;
+
+    uint16_t state0 = 0;
+    const esp_err_t state_err =
+        _transport.read16(_chip_index, to_addr(reg::StatusControl::EMM_STATE0), state0);
+    if (state_err != ESP_OK) {
+        mark_read_error();
+        return state_err;
+    }
+
+    constexpr uint16_t CS2_ERROR_BIT = (1 << 14);
+    constexpr uint16_t CS1_ERROR_BIT = (1 << 13);
+    if (state0 & (CS2_ERROR_BIT | CS1_ERROR_BIT)) {
+        ESP_LOGE(TAG, "Chip %u checksum error: EMM_STATE0=0x%04X (CS1=%s, CS2=%s)",
+                 static_cast<unsigned>(_chip_index), state0,
+                 (state0 & CS1_ERROR_BIT) ? "FAIL" : "OK",
+                 (state0 & CS2_ERROR_BIT) ? "FAIL" : "OK");
+        mark_read_error();
+        return ESP_ERR_INVALID_CRC;
+    }
+
     mark_ok();
     return ESP_OK;
 }
